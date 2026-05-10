@@ -1,0 +1,2411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mastering SCADA Systems at AWPT | Water & Wastewater Infrastructure</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Exo+2:wght@300;400;500;600;700;800;900&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --navy: #020b18;
+    --navy-mid: #071428;
+    --navy-card: #0a1f3d;
+    --navy-border: #0d2a52;
+    --teal: #00d4c8;
+    --teal-dim: #00a89e;
+    --teal-dark: #007a72;
+    --cyan: #00b8f0;
+    --cyan-dim: #0090be;
+    --amber: #f5a623;
+    --red-alarm: #ff3b30;
+    --green-ok: #34c759;
+    --text-primary: #e8f4fc;
+    --text-secondary: #8eacc8;
+    --text-muted: #4a6888;
+    --glow-teal: 0 0 20px rgba(0,212,200,0.35);
+    --glow-cyan: 0 0 20px rgba(0,184,240,0.35);
+    --panel-bg: rgba(7,20,40,0.92);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: var(--navy);
+    color: var(--text-primary);
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 400;
+    overflow-x: hidden;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--navy); }
+  ::-webkit-scrollbar-thumb { background: var(--teal-dark); border-radius: 3px; }
+
+  /* ── Background grid ── */
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(0,212,200,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,200,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* ── Animated scanline ── */
+  .scanline::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0,212,200,0.5), transparent);
+    animation: scan 4s linear infinite;
+    pointer-events: none;
+    z-index: 9999;
+  }
+  @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+
+  /* ── Glowing text ── */
+  .glow-teal { text-shadow: 0 0 20px rgba(0,212,200,0.7), 0 0 40px rgba(0,212,200,0.3); }
+  .glow-cyan  { text-shadow: 0 0 20px rgba(0,184,240,0.7), 0 0 40px rgba(0,184,240,0.3); }
+
+  /* ── Gradient text ── */
+  .gradient-text {
+    background: linear-gradient(135deg, var(--teal) 0%, var(--cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--navy-card);
+    border: 1px solid var(--navy-border);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+  }
+  .card:hover {
+    border-color: var(--teal-dark);
+    box-shadow: var(--glow-teal);
+    transform: translateY(-2px);
+  }
+  .card-glow {
+    box-shadow: 0 0 30px rgba(0,212,200,0.15);
+    border-color: var(--teal-dark);
+  }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    background: linear-gradient(135deg, var(--teal-dark) 0%, var(--cyan-dim) 100%);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .btn-primary:hover {
+    box-shadow: var(--glow-teal);
+    transform: translateY(-1px);
+  }
+  .btn-outline {
+    background: transparent;
+    color: var(--teal);
+    border: 1px solid var(--teal-dark);
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .btn-outline:hover {
+    background: rgba(0,212,200,0.1);
+    box-shadow: var(--glow-teal);
+  }
+  .btn-outline.active {
+    background: rgba(0,212,200,0.15);
+    border-color: var(--teal);
+    color: var(--teal);
+  }
+
+  /* ── Nav ── */
+  .nav-link {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .nav-link:hover { color: var(--teal); background: rgba(0,212,200,0.08); }
+  .nav-link.active { color: var(--teal); background: rgba(0,212,200,0.12); }
+
+  /* ── Section headers ── */
+  .section-tag {
+    display: inline-block;
+    background: rgba(0,212,200,0.12);
+    border: 1px solid rgba(0,212,200,0.3);
+    color: var(--teal);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+  }
+
+  /* ── Mono text ── */
+  .mono { font-family: 'Share Tech Mono', monospace; }
+  .space-mono { font-family: 'Space Mono', monospace; }
+
+  /* ── Status indicators ── */
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .status-ok { background: var(--green-ok); box-shadow: 0 0 6px var(--green-ok); animation: pulse-ok 2s infinite; }
+  .status-alarm { background: var(--red-alarm); box-shadow: 0 0 6px var(--red-alarm); animation: pulse-alarm 1s infinite; }
+  .status-warn { background: var(--amber); box-shadow: 0 0 6px var(--amber); animation: pulse-ok 1.5s infinite; }
+  @keyframes pulse-ok   { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  @keyframes pulse-alarm{ 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* ── Progress bar ── */
+  .progress-bar {
+    height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, var(--teal-dark), var(--cyan));
+    transition: width 1s ease;
+  }
+
+  /* ── Architecture diagram ── */
+  .arch-layer {
+    border: 1px solid;
+    border-radius: 10px;
+    padding: 16px;
+    margin: 8px 0;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .arch-layer::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    border-radius: 4px 0 0 4px;
+  }
+  .arch-layer.enterprise { border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.05); }
+  .arch-layer.enterprise::before { background: var(--amber); }
+  .arch-layer.supervisory { border-color: rgba(0,184,240,0.4); background: rgba(0,184,240,0.05); }
+  .arch-layer.supervisory::before { background: var(--cyan); }
+  .arch-layer.control { border-color: rgba(0,212,200,0.4); background: rgba(0,212,200,0.05); }
+  .arch-layer.control::before { background: var(--teal); }
+  .arch-layer.field { border-color: rgba(52,199,89,0.4); background: rgba(52,199,89,0.05); }
+  .arch-layer.field::before { background: var(--green-ok); }
+  .arch-layer:hover { transform: translateX(4px); box-shadow: var(--glow-teal); }
+
+  /* ── HMI Simulator ── */
+  .hmi-display {
+    background: #000d1a;
+    border: 2px solid var(--teal-dark);
+    border-radius: 8px;
+    font-family: 'Share Tech Mono', monospace;
+    position: relative;
+    overflow: hidden;
+  }
+  .hmi-display::before {
+    content: 'AWPT SCADA - PLANT OVERVIEW';
+    display: block;
+    background: linear-gradient(90deg, var(--teal-dark), var(--cyan-dim));
+    color: white;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    padding: 6px 12px;
+    font-weight: 600;
+  }
+  .hmi-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .hmi-label { font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* ── Tag value flash ── */
+  .tag-updated { animation: flashTag 0.5s ease; }
+  @keyframes flashTag { 0%{background:rgba(0,212,200,0.3)} 100%{background:transparent} }
+
+  /* ── Alarm row ── */
+  .alarm-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    border-left: 3px solid;
+    margin: 4px 0;
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:none} }
+  .alarm-critical { border-color: var(--red-alarm); background: rgba(255,59,48,0.1); }
+  .alarm-warning  { border-color: var(--amber);     background: rgba(245,166,35,0.1); }
+  .alarm-info     { border-color: var(--cyan);       background: rgba(0,184,240,0.1); }
+
+  /* ── Tabs ── */
+  .tab-btn {
+    padding: 8px 18px;
+    border-radius: 8px 8px 0 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-bottom: none;
+    color: var(--text-secondary);
+    background: transparent;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+  }
+  .tab-btn.active {
+    color: var(--teal);
+    background: var(--navy-card);
+    border-color: var(--navy-border);
+  }
+  .tab-btn:hover:not(.active) { color: var(--text-primary); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Accordion ── */
+  .accordion-item {
+    border: 1px solid var(--navy-border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .accordion-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 18px;
+    cursor: pointer;
+    background: var(--navy-card);
+    transition: background 0.2s;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .accordion-header:hover { background: rgba(0,212,200,0.08); }
+  .accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+    background: rgba(2,11,24,0.8);
+  }
+  .accordion-body.open { max-height: 800px; }
+  .accordion-arrow { transition: transform 0.3s; color: var(--teal); font-size: 1.1rem; }
+  .accordion-arrow.open { transform: rotate(180deg); }
+
+  /* ── Checklist ── */
+  .check-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .check-item.done { color: var(--text-muted); text-decoration: line-through; }
+  .check-box {
+    width: 18px; height: 18px;
+    border: 2px solid var(--teal-dark);
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .check-item.done .check-box {
+    background: var(--teal-dark);
+    border-color: var(--teal);
+  }
+
+  /* ── Quiz ── */
+  .quiz-option {
+    padding: 10px 16px;
+    border: 1px solid var(--navy-border);
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 6px 0;
+    transition: all 0.2s;
+    font-size: 0.88rem;
+  }
+  .quiz-option:hover { border-color: var(--teal-dark); background: rgba(0,212,200,0.06); }
+  .quiz-option.correct { border-color: var(--green-ok); background: rgba(52,199,89,0.1); color: var(--green-ok); }
+  .quiz-option.wrong   { border-color: var(--red-alarm); background: rgba(255,59,48,0.1); color: var(--red-alarm); }
+
+  /* ── Tooltip ── */
+  [data-tip] { position: relative; cursor: help; }
+  [data-tip]:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%; transform: translateX(-50%);
+    background: var(--navy-mid);
+    border: 1px solid var(--teal-dark);
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    padding: 6px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    z-index: 100;
+    box-shadow: var(--glow-teal);
+    pointer-events: none;
+  }
+
+  /* ── Hero water animation ── */
+  .water-wave {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 120px;
+    overflow: hidden;
+  }
+  .wave-svg { animation: wave 6s linear infinite; }
+  .wave-svg2 { animation: wave 9s linear infinite reverse; opacity: 0.5; }
+  @keyframes wave { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+
+  /* ── KPI cards ── */
+  .kpi-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  /* ── Vendor badge ── */
+  .vendor-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(0,184,240,0.1);
+    border: 1px solid rgba(0,184,240,0.25);
+    color: var(--cyan);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  /* ── Fade in animation ── */
+  .fade-in { animation: fadeIn 0.6s ease forwards; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+
+  /* ── Section separator ── */
+  .sep { border: none; border-top: 1px solid var(--navy-border); margin: 0; }
+
+  /* ── Communication protocol pills ── */
+  .proto-pill {
+    display: inline-block;
+    background: rgba(0,212,200,0.08);
+    border: 1px solid rgba(0,212,200,0.2);
+    color: var(--teal);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin: 2px;
+  }
+
+  /* ── Safety note ── */
+  .safety-note {
+    background: rgba(245,166,35,0.08);
+    border: 1px solid rgba(245,166,35,0.3);
+    border-left: 4px solid var(--amber);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 0.88rem;
+  }
+  .safety-note .safety-icon { color: var(--amber); font-size: 1.1rem; }
+
+  /* ── Pipe flow animation ── */
+  .pipe-flow {
+    stroke-dasharray: 8 4;
+    animation: flowAnim 1.5s linear infinite;
+  }
+  @keyframes flowAnim { to { stroke-dashoffset: -24; } }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .kpi-value { font-size: 1.5rem; }
+    .hmi-value { font-size: 1.1rem; }
+  }
+
+  /* ── Sticky nav ── */
+  #main-nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(2,11,24,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--navy-border);
+  }
+
+  /* ── Glossary ── */
+  .glossary-term {
+    border-bottom: 1px solid var(--navy-border);
+    padding: 10px 0;
+  }
+  .glossary-dt { color: var(--teal); font-weight: 700; font-size: 0.92rem; margin-bottom: 4px; }
+  .glossary-dd { color: var(--text-secondary); font-size: 0.84rem; }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal-box {
+    background: var(--navy-mid);
+    border: 1px solid var(--teal-dark);
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 560px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: var(--glow-teal);
+    transform: scale(0.95);
+    transition: transform 0.3s;
+  }
+  .modal-overlay.open .modal-box { transform: scale(1); }
+
+  /* ── Blinking cursor ── */
+  .blink { animation: blink 1s step-end infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* Process flow pipe */
+  .process-node {
+    background: var(--navy-card);
+    border: 1px solid var(--navy-border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .process-node:hover { border-color: var(--teal); box-shadow: var(--glow-teal); }
+  .process-node .node-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+</style>
+</head>
+<body class="grid-bg scanline">
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- STICKY NAV -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<nav id="main-nav" class="py-3 px-4">
+  <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+    <div class="flex items-center gap-2 flex-shrink-0">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,var(--teal-dark),var(--cyan-dim))">
+        <span class="text-white font-black text-sm">⚡</span>
+      </div>
+      <span class="font-black text-sm tracking-wide gradient-text uppercase">AWPT SCADA</span>
+    </div>
+    <div class="flex gap-1 overflow-x-auto pb-1 flex-wrap">
+      <a class="nav-link active" onclick="scrollTo('hero')">Home</a>
+      <a class="nav-link" onclick="scrollTo('fundamentals')">Fundamentals</a>
+      <a class="nav-link" onclick="scrollTo('awpt-use')">AWPT Uses</a>
+      <a class="nav-link" onclick="scrollTo('architecture')">Architecture</a>
+      <a class="nav-link" onclick="scrollTo('implementation')">Implementation</a>
+      <a class="nav-link" onclick="scrollTo('config')">Configuration</a>
+      <a class="nav-link" onclick="scrollTo('maintenance')">Maintenance</a>
+      <a class="nav-link" onclick="scrollTo('advanced')">Advanced</a>
+      <a class="nav-link" onclick="scrollTo('tools')">Tools</a>
+      <a class="nav-link" onclick="scrollTo('glossary')">Glossary</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 1. HERO SECTION -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="hero" class="relative min-h-screen flex flex-col items-center justify-center text-center px-6 pt-16 pb-40 overflow-hidden">
+  <!-- Background radial glow -->
+  <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse 70% 60% at 50% 40%, rgba(0,212,200,0.07) 0%, transparent 70%)"></div>
+
+  <div class="relative z-10 max-w-5xl mx-auto fade-in">
+    <div class="section-tag mb-4">ALKHORAYEF WATER & POWER TECHNOLOGIES · GCC WATER SECTOR</div>
+    <h1 class="text-4xl md:text-6xl font-black leading-tight mb-6">
+      <span class="gradient-text glow-teal">Mastering SCADA Systems</span><br/>
+      <span style="color:var(--text-primary)">at AWPT: Water &amp; Wastewater</span><br/>
+      <span style="color:var(--cyan)">Infrastructure</span>
+    </h1>
+    <p class="text-lg md:text-xl font-light max-w-3xl mx-auto mb-10" style="color:var(--text-secondary);line-height:1.8">
+      A comprehensive technical education platform for engineers, technicians, project managers, and O&amp;M professionals working with AWPT on Saudi and GCC water infrastructure — covering everything from SCADA fundamentals to advanced IIoT integration, cybersecurity, and ROI optimization.
+    </p>
+
+    <!-- Live KPI bar -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto mb-10">
+      <div class="card p-4">
+        <div class="kpi-value gradient-text" id="hero-uptime">99.7%</div>
+        <div class="text-xs mt-1" style="color:var(--text-muted)">System Uptime</div>
+      </div>
+      <div class="card p-4">
+        <div class="kpi-value" style="color:var(--cyan)" id="hero-tags">12,480</div>
+        <div class="text-xs mt-1" style="color:var(--text-muted)">Monitored Tags</div>
+      </div>
+      <div class="card p-4">
+        <div class="kpi-value" style="color:var(--amber)" id="hero-sites">184</div>
+        <div class="text-xs mt-1" style="color:var(--text-muted)">Active Sites (KSA)</div>
+      </div>
+      <div class="card p-4">
+        <div class="kpi-value" style="color:var(--green-ok)">< 45s</div>
+        <div class="text-xs mt-1" style="color:var(--text-muted)">Avg. Alarm Response</div>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 justify-center">
+      <button class="btn-primary text-base" onclick="scrollTo('fundamentals')">Start Learning →</button>
+      <button class="btn-outline" onclick="openModal('about-modal')">About This Course</button>
+    </div>
+  </div>
+
+  <!-- Animated water wave at bottom -->
+  <div class="water-wave">
+    <svg class="wave-svg" viewBox="0 0 1440 120" xmlns="http://www.w3.org/2000/svg" style="width:200%;height:100%">
+      <path d="M0,60 C240,100 480,20 720,60 C960,100 1200,20 1440,60 L1440,120 L0,120 Z" fill="rgba(0,212,200,0.08)"/>
+    </svg>
+    <svg class="wave-svg2" viewBox="0 0 1440 120" xmlns="http://www.w3.org/2000/svg" style="width:200%;height:100%;position:absolute;top:0;left:0">
+      <path d="M0,60 C360,20 720,100 1080,60 C1260,40 1360,80 1440,60 L1440,120 L0,120 Z" fill="rgba(0,184,240,0.06)"/>
+    </svg>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 2. SCADA FUNDAMENTALS -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="fundamentals" class="py-20 px-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="section-tag">MODULE 01</div>
+    <h2 class="text-3xl md:text-4xl font-black mb-3">What is <span class="gradient-text">SCADA?</span></h2>
+    <p class="mb-10 text-lg max-w-3xl" style="color:var(--text-secondary)">
+      SCADA (Supervisory Control and Data Acquisition) is a system architecture for monitoring and controlling industrial processes remotely and in real time. It is the central nervous system of any modern water utility.
+    </p>
+
+    <!-- Definition card -->
+    <div class="card card-glow p-6 mb-10">
+      <div class="grid md:grid-cols-3 gap-6">
+        <div>
+          <div class="text-2xl mb-2">🛰️</div>
+          <h3 class="font-bold text-base mb-2" style="color:var(--teal)">Supervisory</h3>
+          <p class="text-sm" style="color:var(--text-secondary)">High-level oversight and command capability. Operators see the entire plant on graphical HMI screens and can issue set-point changes, start/stop commands, and acknowledge alarms.</p>
+        </div>
+        <div>
+          <div class="text-2xl mb-2">🎛️</div>
+          <h3 class="font-bold text-base mb-2" style="color:var(--cyan)">Control</h3>
+          <p class="text-sm" style="color:var(--text-secondary)">PLCs and RTUs execute real-time control logic — PID loops, interlocks, sequential logic — independently of the SCADA server for deterministic safety.</p>
+        </div>
+        <div>
+          <div class="text-2xl mb-2">📊</div>
+          <h3 class="font-bold text-base mb-2" style="color:var(--amber)">Data Acquisition</h3>
+          <p class="text-sm" style="color:var(--text-secondary)">Continuous collection of process values, alarm states, and events from field instruments. All data is time-stamped, stored in historians, and available for reports and analytics.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCADA Components Grid -->
+    <h3 class="text-xl font-bold mb-6">Core Components of a SCADA System</h3>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
+      <div class="card p-5" onclick="openModal('rtu-modal')">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xl" style="background:rgba(52,199,89,0.15);border:1px solid rgba(52,199,89,0.3)">📡</div>
+          <div>
+            <div class="font-bold text-sm">RTU / PLC</div>
+            <div class="text-xs" style="color:var(--text-muted)">Click to learn more</div>
+          </div>
+        </div>
+        <p class="text-sm" style="color:var(--text-secondary)">Remote Terminal Units and Programmable Logic Controllers at the field level. Execute control logic, gather sensor data, communicate up to SCADA servers.</p>
+        <div class="flex flex-wrap gap-1 mt-3">
+          <span class="proto-pill">Siemens S7</span><span class="proto-pill">Allen Bradley</span><span class="proto-pill">Schneider M340</span>
+        </div>
+      </div>
+      <div class="card p-5" onclick="openModal('hmi-modal')">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xl" style="background:rgba(0,184,240,0.15);border:1px solid rgba(0,184,240,0.3)">🖥️</div>
+          <div>
+            <div class="font-bold text-sm">HMI (Human-Machine Interface)</div>
+            <div class="text-xs" style="color:var(--text-muted)">Click to learn more</div>
+          </div>
+        </div>
+        <p class="text-sm" style="color:var(--text-secondary)">Graphical screens giving operators a real-time view of the process. Displays tag values, alarm banners, trend charts, and allows remote control actions.</p>
+        <div class="flex flex-wrap gap-1 mt-3">
+          <span class="proto-pill">WinCC</span><span class="proto-pill">iFIX</span><span class="proto-pill">Ignition</span>
+        </div>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xl" style="background:rgba(0,212,200,0.15);border:1px solid rgba(0,212,200,0.3)">🗄️</div>
+          <div>
+            <div class="font-bold text-sm">SCADA Server</div>
+            <div class="text-xs" style="color:var(--text-muted)">Data engine</div>
+          </div>
+        </div>
+        <p class="text-sm" style="color:var(--text-secondary)">The central processing hub. Hosts the SCADA software, manages communications with PLCs/RTUs, processes alarms, and serves data to HMI clients.</p>
+        <div class="flex flex-wrap gap-1 mt-3">
+          <span class="proto-pill">Redundant</span><span class="proto-pill">Hot-Standby</span>
+        </div>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xl" style="background:rgba(245,166,35,0.15);border:1px solid rgba(245,166,35,0.3)">📦</div>
+          <div>
+            <div class="font-bold text-sm">Historian</div>
+            <div class="text-xs" style="color:var(--text-muted)">Long-term data storage</div>
+          </div>
+        </div>
+        <p class="text-sm" style="color:var(--text-secondary)">Time-series database storing every tag value and event. Essential for regulatory reporting (NWC/SWCC), trend analysis, and forensic investigation of incidents.</p>
+        <div class="flex flex-wrap gap-1 mt-3">
+          <span class="proto-pill">OSIsoft PI</span><span class="proto-pill">Ignition Tag Historian</span>
+        </div>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xl" style="background:rgba(0,212,200,0.15);border:1px solid rgba(0,212,200,0.3)">🌐</div>
+          <div>
+            <div class="font-bold text-sm">Communication Network</div>
+            <div class="text-xs" style="color:var(--text-muted)">The nervous system</div>
+          </div>
+        </div>
+        <p class="text-sm" style="color:var(--text-secondary)">Fiber optic LAN, industrial Ethernet, GPRS/4G/LTE, and microwave links connect field devices to control centers. Redundant paths prevent single points of failure.</p>
+        <div class="flex flex-wrap gap-1 mt-3">
+          <span class="proto-pill">OPC-UA</span><span class="proto-pill">Modbus TCP</span><span class="proto-pill">PROFINET</span>
+        </div>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xl" style="background:rgba(255,59,48,0.12);border:1px solid rgba(255,59,48,0.3)">🔔</div>
+          <div>
+            <div class="font-bold text-sm">Alarm Management</div>
+            <div class="text-xs" style="color:var(--text-muted)">ISA-18.2 compliant</div>
+          </div>
+        </div>
+        <p class="text-sm" style="color:var(--text-secondary)">Structured alarm system per ISA-18.2. Prioritized levels (Critical / High / Medium / Low), alarm shelving, suppression during maintenance, and alarm rationalization.</p>
+        <div class="flex flex-wrap gap-1 mt-3">
+          <span class="proto-pill">ISA-18.2</span><span class="proto-pill">IEC 62682</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCADA vs DCS vs PLC -->
+    <h3 class="text-xl font-bold mb-4">SCADA vs DCS vs PLC-Only: What's the Difference?</h3>
+    <div class="card overflow-hidden mb-8">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr style="background:rgba(0,212,200,0.1);border-bottom:1px solid var(--navy-border)">
+              <th class="text-left p-4 font-bold" style="color:var(--teal)">Attribute</th>
+              <th class="text-left p-4 font-bold" style="color:var(--teal)">SCADA</th>
+              <th class="text-left p-4 font-bold" style="color:var(--cyan)">DCS</th>
+              <th class="text-left p-4 font-bold" style="color:var(--amber)">PLC-Only</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--navy-border)">
+              <td class="p-4 font-semibold" style="color:var(--text-secondary)">Geographic Spread</td>
+              <td class="p-4">Wide (multi-site, hundreds of km)</td>
+              <td class="p-4">Localized (single plant)</td>
+              <td class="p-4">Very local (single machine/area)</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--navy-border)">
+              <td class="p-4 font-semibold" style="color:var(--text-secondary)">Primary Use</td>
+              <td class="p-4">Water networks, pipelines, pumping stations</td>
+              <td class="p-4">Refineries, continuous chemical processes</td>
+              <td class="p-4">Packaging, conveyor, discrete automation</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--navy-border)">
+              <td class="p-4 font-semibold" style="color:var(--text-secondary)">Communication</td>
+              <td class="p-4">WAN, cellular, satellite</td>
+              <td class="p-4">Proprietary fieldbus, LAN</td>
+              <td class="p-4">Local I/O, short-range fieldbus</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--navy-border)">
+              <td class="p-4 font-semibold" style="color:var(--text-secondary)">Control Philosophy</td>
+              <td class="p-4">Supervisory — PLCs do real-time control</td>
+              <td class="p-4">Fully distributed real-time control</td>
+              <td class="p-4">Standalone real-time control</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-semibold" style="color:var(--text-secondary)">AWPT Context</td>
+              <td class="p-4 font-semibold" style="color:var(--green-ok)">✓ Primary choice for water networks</td>
+              <td class="p-4">Used in large desalination plants</td>
+              <td class="p-4">Used within local pump control panels</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="sep"/>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 3. HOW AWPT USES SCADA -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="awpt-use" class="py-20 px-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="section-tag">MODULE 02</div>
+    <h2 class="text-3xl md:text-4xl font-black mb-3">How <span class="gradient-text">AWPT</span> Uses SCADA</h2>
+    <p class="mb-10 max-w-3xl" style="color:var(--text-secondary);font-size:1.05rem">
+      Alkhorayef Water &amp; Power Technologies (AWPT) deploys SCADA across its EPC and O&amp;M contracts, enabling real-time control of water treatment, wastewater, desalination, and distribution networks throughout Saudi Arabia and the GCC.
+    </p>
+
+    <!-- Application tabs -->
+    <div class="flex flex-wrap gap-1 mb-0">
+      <button class="tab-btn active" onclick="switchTab('app-tabs','wtp')">💧 WTP</button>
+      <button class="tab-btn" onclick="switchTab('app-tabs','wwtp')">♻️ WWTP</button>
+      <button class="tab-btn" onclick="switchTab('app-tabs','desal')">🌊 Desalination</button>
+      <button class="tab-btn" onclick="switchTab('app-tabs','pump')">⚙️ Pumping Stations</button>
+      <button class="tab-btn" onclick="switchTab('app-tabs','network')">🗺️ Networks</button>
+    </div>
+    <div class="card p-6" id="app-tabs" style="border-top-left-radius:0">
+      <div class="tab-panel active" id="tab-wtp">
+        <h3 class="text-lg font-bold mb-4" style="color:var(--teal)">Water Treatment Plants (WTP)</h3>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <p class="text-sm mb-4" style="color:var(--text-secondary)">AWPT SCADA at WTPs monitors and controls the complete treatment train from raw water intake to potable water delivery. Key automated processes include:</p>
+            <ul class="space-y-2 text-sm">
+              <li class="flex gap-2"><span style="color:var(--teal)">▸</span><span><b>Coagulation &amp; Flocculation:</b> Auto-dosing of alum and polymer based on turbidity feedback</span></li>
+              <li class="flex gap-2"><span style="color:var(--teal)">▸</span><span><b>Sedimentation:</b> Level monitoring, sludge blanket sensors, automated sludge withdrawal</span></li>
+              <li class="flex gap-2"><span style="color:var(--teal)">▸</span><span><b>Filtration:</b> Filter-to-waste sequencing, differential pressure monitoring, auto-backwash</span></li>
+              <li class="flex gap-2"><span style="color:var(--teal)">▸</span><span><b>Chlorination:</b> Residual chlorine dosing loop (PID control), contact time monitoring</span></li>
+              <li class="flex gap-2"><span style="color:var(--teal)">▸</span><span><b>pH Adjustment:</b> Lime/CO₂ dosing with pH feedback loop</span></li>
+              <li class="flex gap-2"><span style="color:var(--teal)">▸</span><span><b>Fluoridation:</b> Accurate metering pump control per NWC standards</span></li>
+            </ul>
+          </div>
+          <div>
+            <div class="card-glow card p-4">
+              <div class="text-xs font-bold mb-3 mono" style="color:var(--teal)">▶ SCADA TAG EXAMPLE: WTP-01</div>
+              <div class="space-y-2 text-xs mono">
+                <div class="flex justify-between"><span style="color:var(--text-muted)">WTP01.RAW.TURB_IN</span><span style="color:var(--amber)">48.2 NTU</span></div>
+                <div class="flex justify-between"><span style="color:var(--text-muted)">WTP01.FILTER.DP_01</span><span style="color:var(--green-ok)">0.42 bar</span></div>
+                <div class="flex justify-between"><span style="color:var(--text-muted)">WTP01.CL2.RESIDUAL</span><span style="color:var(--green-ok)">0.72 mg/L</span></div>
+                <div class="flex justify-between"><span style="color:var(--text-muted)">WTP01.PRODUCT.FLOW</span><span style="color:var(--cyan)">12,450 m³/h</span></div>
+                <div class="flex justify-between"><span style="color:var(--text-muted)">WTP01.DOSING.ALUM</span><span style="color:var(--teal)">18.4 L/h</span></div>
+              </div>
+            </div>
+            <div class="safety-note mt-4">
+              <span class="safety-icon">⚠️</span> <b>NWC Standard:</b> Residual chlorine must be maintained at 0.2–0.5 mg/L at consumer taps. SCADA alarm limits are typically set at 0.15 (low) and 0.8 mg/L (high) with automatic operator notification.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-wwtp">
+        <h3 class="text-lg font-bold mb-4" style="color:var(--cyan)">Wastewater Treatment Plants (WWTP)</h3>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <p class="text-sm mb-4" style="color:var(--text-secondary)">SCADA at AWWTPs manages complex biological and physical-chemical treatment processes with tight regulatory effluent limits set by the Saudi Ministry of Environment.</p>
+            <ul class="space-y-2 text-sm">
+              <li class="flex gap-2"><span style="color:var(--cyan)">▸</span><span><b>Inlet Works:</b> Screenings, grit removal — flow metering and level control</span></li>
+              <li class="flex gap-2"><span style="color:var(--cyan)">▸</span><span><b>Primary Clarifiers:</b> Sludge collection, overflow rate monitoring</span></li>
+              <li class="flex gap-2"><span style="color:var(--cyan)">▸</span><span><b>Aeration (MBR/ASP):</b> DO (dissolved oxygen) control via VFD blowers — major energy saving</span></li>
+              <li class="flex gap-2"><span style="color:var(--cyan)">▸</span><span><b>Membrane Bioreactors:</b> TMP (transmembrane pressure) monitoring, auto-backwash and CIP triggers</span></li>
+              <li class="flex gap-2"><span style="color:var(--cyan)">▸</span><span><b>Tertiary Treatment:</b> UV disinfection, advanced filtration for reuse-quality effluent</span></li>
+              <li class="flex gap-2"><span style="color:var(--cyan)">▸</span><span><b>Sludge Handling:</b> Thickeners, centrifuges, digesters — automated sequencing</span></li>
+            </ul>
+          </div>
+          <div>
+            <div class="card p-4" style="border-color:rgba(0,184,240,0.3)">
+              <div class="text-xs font-bold mb-3 mono" style="color:var(--cyan)">▶ ENERGY OPTIMIZATION VIA SCADA</div>
+              <p class="text-xs mb-3" style="color:var(--text-secondary)">Aeration typically consumes 50–70% of a WWTP's energy. AWPT SCADA implements DO-based aeration control:</p>
+              <div class="space-y-2">
+                <div>
+                  <div class="flex justify-between text-xs mb-1"><span>Blower 1 Load</span><span style="color:var(--teal)">62%</span></div>
+                  <div class="progress-bar"><div class="progress-fill" style="width:62%"></div></div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-xs mb-1"><span>DO Target</span><span style="color:var(--green-ok)">2.0 mg/L</span></div>
+                  <div class="progress-bar"><div class="progress-fill" style="width:80%;background:linear-gradient(90deg,var(--green-ok),#a8ff78)"></div></div>
+                </div>
+                <div class="text-xs mt-2" style="color:var(--amber)">💡 Estimated energy saving vs fixed-speed: 38%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-desal">
+        <h3 class="text-lg font-bold mb-4" style="color:var(--amber)">Desalination Plants</h3>
+        <p class="text-sm mb-4" style="color:var(--text-secondary)">AWPT operates RO (Reverse Osmosis) and thermal desalination plants under SWCC (Saline Water Conversion Corporation) contracts. SCADA is critical for:</p>
+        <div class="grid md:grid-cols-3 gap-4">
+          <div class="card p-4">
+            <div class="text-xl mb-2">💧</div>
+            <h4 class="font-bold text-sm mb-2" style="color:var(--amber)">RO Process Control</h4>
+            <ul class="text-xs space-y-1" style="color:var(--text-secondary)">
+              <li>▸ Feed pressure monitoring (60–80 bar)</li>
+              <li>▸ Permeate conductivity / salt rejection %</li>
+              <li>▸ SDI (Silt Density Index) tracking</li>
+              <li>▸ Antiscalant dosing control</li>
+              <li>▸ CIP (Clean-In-Place) sequencing</li>
+            </ul>
+          </div>
+          <div class="card p-4">
+            <div class="text-xl mb-2">⚡</div>
+            <h4 class="font-bold text-sm mb-2" style="color:var(--amber)">Energy Recovery</h4>
+            <ul class="text-xs space-y-1" style="color:var(--text-secondary)">
+              <li>▸ ERD (Energy Recovery Device) monitoring</li>
+              <li>▸ SEC (kWh/m³) real-time calculation</li>
+              <li>▸ High-pressure pump VFD control</li>
+              <li>▸ Specific energy vs. production KPIs</li>
+            </ul>
+          </div>
+          <div class="card p-4">
+            <div class="text-xl mb-2">📋</div>
+            <h4 class="font-bold text-sm mb-2" style="color:var(--amber)">SWCC Compliance</h4>
+            <ul class="text-xs space-y-1" style="color:var(--text-secondary)">
+              <li>▸ Automated regulatory reports</li>
+              <li>▸ Product water quality logging</li>
+              <li>▸ Production volume reporting</li>
+              <li>▸ Brine discharge monitoring</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-pump">
+        <h3 class="text-lg font-bold mb-4" style="color:var(--green-ok)">Pumping Stations</h3>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <p class="text-sm mb-4" style="color:var(--text-secondary)">Pumping stations are the most numerous SCADA-connected assets in AWPT's portfolio — sometimes hundreds per project. SCADA enables remote unmanned operation:</p>
+            <ul class="space-y-2 text-sm">
+              <li class="flex gap-2"><span style="color:var(--green-ok)">▸</span><span><b>Lead-Lag-Standby</b> pump sequencing based on wet well level</span></li>
+              <li class="flex gap-2"><span style="color:var(--green-ok)">▸</span><span><b>VFD Speed Control</b> for pressure zone management and energy saving</span></li>
+              <li class="flex gap-2"><span style="color:var(--green-ok)">▸</span><span><b>Runtime Equalization</b> to balance wear across pumps</span></li>
+              <li class="flex gap-2"><span style="color:var(--green-ok)">▸</span><span><b>Pump Efficiency Monitoring</b> — flow vs. power curves to detect wear</span></li>
+              <li class="flex gap-2"><span style="color:var(--green-ok)">▸</span><span><b>Anti-Waterhammer</b> valve sequencing on pump start/stop</span></li>
+              <li class="flex gap-2"><span style="color:var(--green-ok)">▸</span><span><b>Non-Return Valve</b> position feedback and seat leak detection</span></li>
+            </ul>
+          </div>
+          <div>
+            <div class="safety-note">
+              <span class="safety-icon">⚠️</span> <b>Safety Critical:</b> SCADA must never be the sole protection for pumping station hazards. Local mechanical protections (thermal overloads, pressure relief valves, high-level cut-offs) must be independent of SCADA and PLC control.
+            </div>
+            <div class="card p-4 mt-4">
+              <div class="text-xs font-bold mb-2 mono" style="color:var(--green-ok)">PUMP STATION PS-47 STATUS</div>
+              <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                <div class="card p-2"><div class="font-bold" style="color:var(--green-ok)">RUN</div><div style="color:var(--text-muted)">Pump 1</div></div>
+                <div class="card p-2"><div class="font-bold" style="color:var(--amber)">STBY</div><div style="color:var(--text-muted)">Pump 2</div></div>
+                <div class="card p-2"><div class="font-bold" style="color:var(--red-alarm)">FAULT</div><div style="color:var(--text-muted)">Pump 3</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-network">
+        <h3 class="text-lg font-bold mb-4" style="color:var(--teal)">Distribution Networks</h3>
+        <p class="text-sm mb-4" style="color:var(--text-secondary)">For transmission mains and distribution networks, AWPT SCADA integrates with district metered areas (DMAs), pressure management zones, and telemetry from remote meters.</p>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="card p-4">
+            <h4 class="font-bold text-sm mb-3" style="color:var(--teal)">Network Monitoring</h4>
+            <ul class="text-xs space-y-2" style="color:var(--text-secondary)">
+              <li>▸ <b>Pressure Zoning:</b> PRV (Pressure Reducing Valve) automatic set-point adjustment</li>
+              <li>▸ <b>NRW Reduction:</b> SCADA-driven night flow analysis for leak detection</li>
+              <li>▸ <b>Storage Reservoirs:</b> Level monitoring, fill/draw cycle tracking</li>
+              <li>▸ <b>Water Quality:</b> Inline chlorine residual, turbidity at distribution points</li>
+            </ul>
+          </div>
+          <div class="card p-4">
+            <h4 class="font-bold text-sm mb-3" style="color:var(--cyan)">Benefits Delivered</h4>
+            <ul class="text-xs space-y-2" style="color:var(--text-secondary)">
+              <li>✓ Real-time leak detection (flow balance analysis)</li>
+              <li>✓ 24/7 water quality assurance without site visits</li>
+              <li>✓ Automated pressure management (lower burst rate)</li>
+              <li>✓ Accurate billing data via remote flow metering</li>
+              <li>✓ Regulatory reporting to NWC automatically</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Benefits -->
+    <h3 class="text-xl font-bold mt-12 mb-6">Value AWPT Delivers to Clients via SCADA</h3>
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="card p-5 text-center">
+        <div class="text-3xl mb-3">⚡</div>
+        <h4 class="font-bold text-sm mb-2" style="color:var(--teal)">Real-Time Monitoring</h4>
+        <p class="text-xs" style="color:var(--text-secondary)">Every process parameter visible to operators 24/7. Instant alerts for any deviation from normal operating range.</p>
+      </div>
+      <div class="card p-5 text-center">
+        <div class="text-3xl mb-3">🔧</div>
+        <h4 class="font-bold text-sm mb-2" style="color:var(--cyan)">Predictive Maintenance</h4>
+        <p class="text-xs" style="color:var(--text-secondary)">Vibration, current draw, and temperature trends detect pump and motor failures weeks before breakdown.</p>
+      </div>
+      <div class="card p-5 text-center">
+        <div class="text-3xl mb-3">💰</div>
+        <h4 class="font-bold text-sm mb-2" style="color:var(--amber)">Energy Optimization</h4>
+        <p class="text-xs" style="color:var(--text-secondary)">VFD control, demand management, and off-peak scheduling can reduce energy costs by 20–40%.</p>
+      </div>
+      <div class="card p-5 text-center">
+        <div class="text-3xl mb-3">📋</div>
+        <h4 class="font-bold text-sm mb-2" style="color:var(--green-ok)">Regulatory Compliance</h4>
+        <p class="text-xs" style="color:var(--text-secondary)">Automated, tamper-proof data logging meets NWC, SWCC, and Saudi EPA reporting requirements without manual data collection.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="sep"/>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 4. SCADA ARCHITECTURE -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="architecture" class="py-20 px-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="section-tag">MODULE 03</div>
+    <h2 class="text-3xl md:text-4xl font-black mb-3">SCADA System <span class="gradient-text">Architecture</span></h2>
+    <p class="mb-10 max-w-3xl" style="color:var(--text-secondary);font-size:1.05rem">
+      Modern SCADA follows a hierarchical, layered model. Click any layer to expand its details. Understanding this architecture is essential for design, maintenance, and cybersecurity.
+    </p>
+
+    <div class="grid md:grid-cols-2 gap-10 items-start">
+      <!-- Interactive layers -->
+      <div>
+        <div class="arch-layer enterprise mb-2" onclick="toggleArch(this,'arch-enterprise')">
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="text-xs font-bold mb-1" style="color:var(--amber);letter-spacing:0.1em">LEVEL 4 — ENTERPRISE</div>
+              <div class="font-bold text-sm">Business Systems Integration</div>
+            </div>
+            <span style="color:var(--amber)">▼</span>
+          </div>
+          <div id="arch-enterprise" style="max-height:0;overflow:hidden;transition:max-height 0.4s ease">
+            <div class="mt-3 text-sm space-y-1 pt-3" style="border-top:1px solid rgba(245,166,35,0.2);color:var(--text-secondary)">
+              <p>▸ ERP Integration (SAP, Oracle) — automatic work order generation</p>
+              <p>▸ CMMS (IBM Maximo, SAP PM) — asset management and PM scheduling</p>
+              <p>▸ Business Intelligence dashboards — executive KPI reporting</p>
+              <p>▸ Regulatory reporting portals (NWC, SWCC)</p>
+              <p>▸ Cloud analytics platform (Azure IoT Hub, AWS IoT)</p>
+              <div class="flex flex-wrap gap-1 mt-2">
+                <span class="proto-pill">REST API</span><span class="proto-pill">OPC-UA</span><span class="proto-pill">MQTT</span><span class="proto-pill">SQL</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center text-xs my-1" style="color:var(--text-muted)">▲ Firewall / DMZ ▲</div>
+
+        <div class="arch-layer supervisory" onclick="toggleArch(this,'arch-supervisory')">
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="text-xs font-bold mb-1" style="color:var(--cyan);letter-spacing:0.1em">LEVEL 3 — SUPERVISORY</div>
+              <div class="font-bold text-sm">SCADA Servers, HMI Workstations, Historian</div>
+            </div>
+            <span style="color:var(--cyan)">▼</span>
+          </div>
+          <div id="arch-supervisory" style="max-height:0;overflow:hidden;transition:max-height 0.4s ease">
+            <div class="mt-3 text-sm space-y-1 pt-3" style="border-top:1px solid rgba(0,184,240,0.2);color:var(--text-secondary)">
+              <p>▸ Primary + Redundant SCADA server (hot standby)</p>
+              <p>▸ Operator HMI workstations (multi-monitor)</p>
+              <p>▸ Engineering workstation (tag config, PLC programming access)</p>
+              <p>▸ Historian server (OSIsoft PI or Ignition Tag Historian)</p>
+              <p>▸ Alarm management server (ISA-18.2 compliant)</p>
+              <p>▸ Report server (automated regulatory reports)</p>
+              <p>▸ Remote client access (thin clients, mobile HMI)</p>
+              <div class="flex flex-wrap gap-1 mt-2">
+                <span class="proto-pill">OPC-DA</span><span class="proto-pill">OPC-UA</span><span class="proto-pill">Modbus TCP</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center text-xs my-1" style="color:var(--text-muted)">▲ Industrial Ethernet / Fiber Optic LAN ▲</div>
+
+        <div class="arch-layer control" onclick="toggleArch(this,'arch-control')">
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="text-xs font-bold mb-1" style="color:var(--teal);letter-spacing:0.1em">LEVEL 2 — CONTROL</div>
+              <div class="font-bold text-sm">PLCs, RTUs, DCS Controllers</div>
+            </div>
+            <span style="color:var(--teal)">▼</span>
+          </div>
+          <div id="arch-control" style="max-height:0;overflow:hidden;transition:max-height 0.4s ease">
+            <div class="mt-3 text-sm space-y-1 pt-3" style="border-top:1px solid rgba(0,212,200,0.2);color:var(--text-secondary)">
+              <p>▸ Main Plant PLC — primary control logic (IEC 61131-3)</p>
+              <p>▸ Remote I/O panels — distributed I/O on PROFIBUS/EtherNet/IP</p>
+              <p>▸ RTUs at remote pumping stations — standalone if comms lost</p>
+              <p>▸ Safety PLC (SIS) — independent of main PLC (IEC 61511)</p>
+              <p>▸ MCC (Motor Control Center) with soft starters and VFDs</p>
+              <div class="flex flex-wrap gap-1 mt-2">
+                <span class="proto-pill">PROFIBUS DP</span><span class="proto-pill">EtherNet/IP</span><span class="proto-pill">DeviceNet</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center text-xs my-1" style="color:var(--text-muted)">▲ Fieldbus / 4-20mA / HART / Wireless ▲</div>
+
+        <div class="arch-layer field" onclick="toggleArch(this,'arch-field')">
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="text-xs font-bold mb-1" style="color:var(--green-ok);letter-spacing:0.1em">LEVEL 1 — FIELD</div>
+              <div class="font-bold text-sm">Sensors, Actuators, VFDs, Transmitters</div>
+            </div>
+            <span style="color:var(--green-ok)">▼</span>
+          </div>
+          <div id="arch-field" style="max-height:0;overflow:hidden;transition:max-height 0.4s ease">
+            <div class="mt-3 text-sm space-y-1 pt-3" style="border-top:1px solid rgba(52,199,89,0.2);color:var(--text-secondary)">
+              <p>▸ Flow transmitters (electromagnetic, ultrasonic, Coriolis)</p>
+              <p>▸ Pressure / differential pressure transmitters</p>
+              <p>▸ Level sensors (ultrasonic, submersible hydrostatic, radar)</p>
+              <p>▸ Analytical instruments (pH, DO, turbidity, chlorine, conductivity)</p>
+              <p>▸ Temperature transmitters (4–20mA / HART)</p>
+              <p>▸ VFDs (Variable Frequency Drives) for pump and blower control</p>
+              <p>▸ Control valves with positioners (4–20mA)</p>
+              <p>▸ Motor current transformers for predictive maintenance</p>
+              <div class="flex flex-wrap gap-1 mt-2">
+                <span class="proto-pill">4-20mA</span><span class="proto-pill">HART</span><span class="proto-pill">Digital I/O</span><span class="proto-pill">WirelessHART</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SVG Architecture diagram -->
+      <div>
+        <svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg" class="w-full" style="max-height:520px">
+          <!-- Background -->
+          <rect width="400" height="500" fill="rgba(7,20,40,0.6)" rx="12"/>
+
+          <!-- Enterprise layer -->
+          <rect x="20" y="20" width="360" height="70" rx="8" fill="rgba(245,166,35,0.1)" stroke="rgba(245,166,35,0.4)" stroke-width="1.5"/>
+          <text x="200" y="42" fill="#f5a623" font-size="9" font-family="Share Tech Mono" text-anchor="middle" letter-spacing="2">ENTERPRISE LEVEL</text>
+          <rect x="35" y="50" width="80" height="28" rx="4" fill="rgba(245,166,35,0.2)" stroke="rgba(245,166,35,0.4)" stroke-width="1"/>
+          <text x="75" y="68" fill="#f5a623" font-size="8" font-family="Share Tech Mono" text-anchor="middle">ERP / SAP</text>
+          <rect x="130" y="50" width="80" height="28" rx="4" fill="rgba(245,166,35,0.2)" stroke="rgba(245,166,35,0.4)" stroke-width="1"/>
+          <text x="170" y="68" fill="#f5a623" font-size="8" font-family="Share Tech Mono" text-anchor="middle">CMMS/Maximo</text>
+          <rect x="225" y="50" width="80" height="28" rx="4" fill="rgba(245,166,35,0.2)" stroke="rgba(245,166,35,0.4)" stroke-width="1"/>
+          <text x="265" y="68" fill="#f5a623" font-size="8" font-family="Share Tech Mono" text-anchor="middle">Cloud / BI</text>
+
+          <!-- Firewall -->
+          <rect x="20" y="100" width="360" height="18" rx="4" fill="rgba(255,59,48,0.15)" stroke="rgba(255,59,48,0.4)" stroke-width="1" stroke-dasharray="4,2"/>
+          <text x="200" y="113" fill="#ff3b30" font-size="8" font-family="Share Tech Mono" text-anchor="middle" letter-spacing="1">FIREWALL / DMZ</text>
+
+          <!-- Supervisory layer -->
+          <rect x="20" y="128" width="360" height="90" rx="8" fill="rgba(0,184,240,0.08)" stroke="rgba(0,184,240,0.4)" stroke-width="1.5"/>
+          <text x="200" y="148" fill="#00b8f0" font-size="9" font-family="Share Tech Mono" text-anchor="middle" letter-spacing="2">SUPERVISORY LEVEL</text>
+          <!-- SCADA Server boxes -->
+          <rect x="35" y="155" width="75" height="50" rx="4" fill="rgba(0,184,240,0.15)" stroke="rgba(0,184,240,0.3)" stroke-width="1"/>
+          <text x="72" y="175" fill="#00b8f0" font-size="7" font-family="Share Tech Mono" text-anchor="middle">SCADA</text>
+          <text x="72" y="187" fill="#00b8f0" font-size="7" font-family="Share Tech Mono" text-anchor="middle">SERVER 1</text>
+          <text x="72" y="199" fill="#34c759" font-size="6" font-family="Share Tech Mono" text-anchor="middle">PRIMARY</text>
+          <rect x="120" y="155" width="75" height="50" rx="4" fill="rgba(0,184,240,0.08)" stroke="rgba(0,184,240,0.2)" stroke-width="1"/>
+          <text x="157" y="175" fill="#8eacc8" font-size="7" font-family="Share Tech Mono" text-anchor="middle">SCADA</text>
+          <text x="157" y="187" fill="#8eacc8" font-size="7" font-family="Share Tech Mono" text-anchor="middle">SERVER 2</text>
+          <text x="157" y="199" fill="#f5a623" font-size="6" font-family="Share Tech Mono" text-anchor="middle">STANDBY</text>
+          <rect x="205" y="155" width="65" height="50" rx="4" fill="rgba(0,184,240,0.12)" stroke="rgba(0,184,240,0.3)" stroke-width="1"/>
+          <text x="237" y="180" fill="#00b8f0" font-size="7" font-family="Share Tech Mono" text-anchor="middle">HISTORIAN</text>
+          <text x="237" y="192" fill="#8eacc8" font-size="6" font-family="Share Tech Mono" text-anchor="middle">OSIsoft PI</text>
+          <rect x="280" y="155" width="85" height="50" rx="4" fill="rgba(0,184,240,0.12)" stroke="rgba(0,184,240,0.3)" stroke-width="1"/>
+          <text x="322" y="175" fill="#00b8f0" font-size="7" font-family="Share Tech Mono" text-anchor="middle">HMI</text>
+          <text x="322" y="187" fill="#8eacc8" font-size="6" font-family="Share Tech Mono" text-anchor="middle">WORKSTATIONS</text>
+          <text x="322" y="199" fill="#8eacc8" font-size="6" font-family="Share Tech Mono" text-anchor="middle">x3</text>
+
+          <!-- Industrial Ethernet line -->
+          <line x1="40" y1="228" x2="360" y2="228" stroke="rgba(0,212,200,0.5)" stroke-width="2"/>
+          <text x="200" y="240" fill="rgba(0,212,200,0.7)" font-size="7" font-family="Share Tech Mono" text-anchor="middle" letter-spacing="1">INDUSTRIAL ETHERNET SWITCH (REDUNDANT RING)</text>
+
+          <!-- Control layer -->
+          <rect x="20" y="248" width="360" height="90" rx="8" fill="rgba(0,212,200,0.07)" stroke="rgba(0,212,200,0.4)" stroke-width="1.5"/>
+          <text x="200" y="268" fill="#00d4c8" font-size="9" font-family="Share Tech Mono" text-anchor="middle" letter-spacing="2">CONTROL LEVEL</text>
+          <rect x="35" y="274" width="70" height="50" rx="4" fill="rgba(0,212,200,0.15)" stroke="rgba(0,212,200,0.4)" stroke-width="1"/>
+          <text x="70" y="295" fill="#00d4c8" font-size="7" font-family="Share Tech Mono" text-anchor="middle">MAIN PLC</text>
+          <text x="70" y="307" fill="#8eacc8" font-size="6" font-family="Share Tech Mono" text-anchor="middle">Siemens S7</text>
+          <rect x="115" y="274" width="70" height="50" rx="4" fill="rgba(0,212,200,0.1)" stroke="rgba(0,212,200,0.3)" stroke-width="1"/>
+          <text x="150" y="295" fill="#00d4c8" font-size="7" font-family="Share Tech Mono" text-anchor="middle">RTU x12</text>
+          <text x="150" y="307" fill="#8eacc8" font-size="6" font-family="Share Tech Mono" text-anchor="middle">Remote Sites</text>
+          <rect x="195" y="274" width="70" height="50" rx="4" fill="rgba(255,59,48,0.1)" stroke="rgba(255,59,48,0.3)" stroke-width="1"/>
+          <text x="230" y="295" fill="#ff3b30" font-size="7" font-family="Share Tech Mono" text-anchor="middle">SAFETY PLC</text>
+          <text x="230" y="307" fill="#8eacc8" font-size="6" font-family="Share Tech Mono" text-anchor="middle">SIS IEC61511</text>
+          <rect x="275" y="274" width="90" height="50" rx="4" fill="rgba(0,212,200,0.1)" stroke="rgba(0,212,200,0.3)" stroke-width="1"/>
+          <text x="320" y="292" fill="#00d4c8" font-size="7" font-family="Share Tech Mono" text-anchor="middle">VFDs / MCCs</text>
+          <text x="320" y="304" fill="#8eacc8" font-size="6" font-family="Share Tech Mono" text-anchor="middle">Pump / Blower</text>
+          <text x="320" y="316" fill="#8eacc8" font-size="6" font-family="Share Tech Mono" text-anchor="middle">Control</text>
+
+          <!-- Fieldbus lines -->
+          <line x1="40" y1="348" x2="360" y2="348" stroke="rgba(52,199,89,0.4)" stroke-width="1.5" stroke-dasharray="6,3" class="pipe-flow"/>
+          <text x="200" y="359" fill="rgba(52,199,89,0.7)" font-size="7" font-family="Share Tech Mono" text-anchor="middle" letter-spacing="1">4-20mA / HART / PROFIBUS / WirelessHART</text>
+
+          <!-- Field layer -->
+          <rect x="20" y="368" width="360" height="110" rx="8" fill="rgba(52,199,89,0.06)" stroke="rgba(52,199,89,0.4)" stroke-width="1.5"/>
+          <text x="200" y="386" fill="#34c759" font-size="9" font-family="Share Tech Mono" text-anchor="middle" letter-spacing="2">FIELD LEVEL</text>
+          <!-- Field devices icons as text -->
+          <text x="45" y="415" font-size="18" text-anchor="middle">💧</text>
+          <text x="45" y="428" fill="#34c759" font-size="6.5" font-family="Share Tech Mono" text-anchor="middle">FLOW</text>
+          <text x="45" y="437" fill="#8eacc8" font-size="5.5" font-family="Share Tech Mono" text-anchor="middle">xmitter</text>
+
+          <text x="105" y="415" font-size="18" text-anchor="middle">📊</text>
+          <text x="105" y="428" fill="#34c759" font-size="6.5" font-family="Share Tech Mono" text-anchor="middle">PRESSURE</text>
+          <text x="105" y="437" fill="#8eacc8" font-size="5.5" font-family="Share Tech Mono" text-anchor="middle">xmitter</text>
+
+          <text x="165" y="415" font-size="18" text-anchor="middle">🌡️</text>
+          <text x="165" y="428" fill="#34c759" font-size="6.5" font-family="Share Tech Mono" text-anchor="middle">LEVEL</text>
+          <text x="165" y="437" fill="#8eacc8" font-size="5.5" font-family="Share Tech Mono" text-anchor="middle">sensor</text>
+
+          <text x="225" y="415" font-size="18" text-anchor="middle">🧪</text>
+          <text x="225" y="428" fill="#34c759" font-size="6.5" font-family="Share Tech Mono" text-anchor="middle">ANALYTICAL</text>
+          <text x="225" y="437" fill="#8eacc8" font-size="5.5" font-family="Share Tech Mono" text-anchor="middle">pH/Cl₂/DO</text>
+
+          <text x="285" y="415" font-size="18" text-anchor="middle">⚙️</text>
+          <text x="285" y="428" fill="#34c759" font-size="6.5" font-family="Share Tech Mono" text-anchor="middle">ACTUATORS</text>
+          <text x="285" y="437" fill="#8eacc8" font-size="5.5" font-family="Share Tech Mono" text-anchor="middle">valves/pumps</text>
+
+          <text x="345" y="415" font-size="18" text-anchor="middle">🔄</text>
+          <text x="345" y="428" fill="#34c759" font-size="6.5" font-family="Share Tech Mono" text-anchor="middle">VFDs</text>
+          <text x="345" y="437" fill="#8eacc8" font-size="5.5" font-family="Share Tech Mono" text-anchor="middle">drives</text>
+
+          <!-- Bottom label -->
+          <text x="200" y="470" fill="#4a6888" font-size="7" font-family="Share Tech Mono" text-anchor="middle">AWPT SCADA REFERENCE ARCHITECTURE — IEC 62443 COMPLIANT</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="sep"/>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 5. IMPLEMENTATION GUIDE -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="implementation" class="py-20 px-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="section-tag">MODULE 04</div>
+    <h2 class="text-3xl md:text-4xl font-black mb-3">Implementation <span class="gradient-text">Guide</span></h2>
+    <p class="mb-10 max-w-3xl" style="color:var(--text-secondary);font-size:1.05rem">
+      A systematic approach to SCADA project delivery — from requirements to handover. Each phase has defined deliverables and quality gates.
+    </p>
+
+    <!-- Project phases timeline -->
+    <div class="relative mb-12">
+      <div class="grid md:grid-cols-6 gap-2">
+        <div class="card p-4 text-center relative">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 font-black text-sm" style="background:rgba(0,212,200,0.2);border:2px solid var(--teal);color:var(--teal)">1</div>
+          <div class="text-xs font-bold mb-1" style="color:var(--teal)">DESIGN</div>
+          <div class="text-xs" style="color:var(--text-muted)">P&ID review, I/O count, tag list, comms design, HMI layout</div>
+        </div>
+        <div class="card p-4 text-center">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 font-black text-sm" style="background:rgba(0,184,240,0.2);border:2px solid var(--cyan);color:var(--cyan)">2</div>
+          <div class="text-xs font-bold mb-1" style="color:var(--cyan)">PROCUREMENT</div>
+          <div class="text-xs" style="color:var(--text-muted)">Hardware selection, vendor QA, delivery schedule</div>
+        </div>
+        <div class="card p-4 text-center">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 font-black text-sm" style="background:rgba(245,166,35,0.2);border:2px solid var(--amber);color:var(--amber)">3</div>
+          <div class="text-xs font-bold mb-1" style="color:var(--amber)">CONFIGURATION</div>
+          <div class="text-xs" style="color:var(--text-muted)">PLC programming, HMI screens, alarm config, historian setup</div>
+        </div>
+        <div class="card p-4 text-center">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 font-black text-sm" style="background:rgba(52,199,89,0.2);border:2px solid var(--green-ok);color:var(--green-ok)">4</div>
+          <div class="text-xs font-bold mb-1" style="color:var(--green-ok)">FAT</div>
+          <div class="text-xs" style="color:var(--text-muted)">Factory Acceptance Test — simulation, alarm check, comms test</div>
+        </div>
+        <div class="card p-4 text-center">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 font-black text-sm" style="background:rgba(0,212,200,0.2);border:2px solid var(--teal);color:var(--teal)">5</div>
+          <div class="text-xs font-bold mb-1" style="color:var(--teal)">SAT / COMM</div>
+          <div class="text-xs" style="color:var(--text-muted)">Site Acceptance Test, loop checks, PLC↔SCADA live verification</div>
+        </div>
+        <div class="card p-4 text-center">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 font-black text-sm" style="background:rgba(0,184,240,0.2);border:2px solid var(--cyan);color:var(--cyan)">6</div>
+          <div class="text-xs font-bold mb-1" style="color:var(--cyan)">HANDOVER</div>
+          <div class="text-xs" style="color:var(--text-muted)">O&M training, as-built docs, O&M manual, warranty start</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8 mb-10">
+      <!-- Vendor selection -->
+      <div>
+        <h3 class="text-lg font-bold mb-4">Key SCADA Vendors in KSA Water Projects</h3>
+        <div class="space-y-3">
+          <div class="card p-4">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-bold text-sm">Ignition by Inductive Automation</div>
+              <span class="vendor-badge">Recommended</span>
+            </div>
+            <p class="text-xs" style="color:var(--text-secondary)">Unlimited tags, web-based, Java/Python scripting, strong OPC-UA support. Growing adoption in Saudi Arabia for its flexible licensing model (server-based, not per-tag).</p>
+          </div>
+          <div class="card p-4">
+            <div class="font-bold text-sm mb-2">Siemens WinCC / WinCC OA</div>
+            <p class="text-xs" style="color:var(--text-secondary)">Market leader in KSA. Seamless integration with Siemens S7 PLCs (TIA Portal). WinCC OA (PVSS) used for large municipal projects due to scalability.</p>
+          </div>
+          <div class="card p-4">
+            <div class="font-bold text-sm mb-2">AVEVA System Platform (Wonderware)</div>
+            <p class="text-xs" style="color:var(--text-secondary)">Strong historian (AVEVA PI) and object-based design. Common in SWCC desalination and large water authority projects. Excellent integration with SAP.</p>
+          </div>
+          <div class="card p-4">
+            <div class="font-bold text-sm mb-2">Schneider Electric EcoStruxure / ClearSCADA</div>
+            <p class="text-xs" style="color:var(--text-secondary)">Purpose-built for water utilities. Native support for remote pumping stations, DNP3/IEC 60870-5 protocols. Good choice for distribution network telemetry.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cybersecurity -->
+      <div>
+        <h3 class="text-lg font-bold mb-4">Cybersecurity Best Practices <span class="text-xs py-1 px-2 rounded" style="background:rgba(255,59,48,0.15);color:var(--red-alarm)">CRITICAL</span></h3>
+        <div class="safety-note mb-4">
+          <span class="safety-icon">🔒</span> <b>Saudi Context:</b> NCA (National Cybersecurity Authority) and OTCC (Operational Technology Cybersecurity Controls) framework mandates specific security controls for critical water infrastructure in the Kingdom.
+        </div>
+        <div class="space-y-2">
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+              <span>🔒 Network Segmentation (Defense in Depth)</span>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <div class="p-4 text-sm space-y-2" style="color:var(--text-secondary)">
+                <p>▸ Separate OT network from IT network with industrial DMZ</p>
+                <p>▸ No direct internet connectivity from SCADA servers</p>
+                <p>▸ IDMZ (Industrial DMZ) with data diodes for historian replication</p>
+                <p>▸ Purdue Model / IEC 62443 zone and conduit model</p>
+                <p>▸ Firewall rules: whitelist-only, minimal open ports</p>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+              <span>👤 Access Control & Authentication</span>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <div class="p-4 text-sm space-y-2" style="color:var(--text-secondary)">
+                <p>▸ Role-based access control (View / Operate / Engineer / Admin)</p>
+                <p>▸ MFA for remote access via VPN</p>
+                <p>▸ No shared accounts — individual user IDs for full audit trail</p>
+                <p>▸ Password policy per NCSC guidelines (min 12 chars, complexity)</p>
+                <p>▸ Privileged Access Management (PAM) for admin accounts</p>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+              <span>🛡️ Patch Management & Hardening</span>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <div class="p-4 text-sm space-y-2" style="color:var(--text-secondary)">
+                <p>▸ OS patching schedule — test in staging before production</p>
+                <p>▸ Disable unused services, ports, and protocols</p>
+                <p>▸ Application whitelisting on SCADA servers</p>
+                <p>▸ USB port control / disabling on OT workstations</p>
+                <p>▸ Antivirus with OT-aware signatures (Claroty, Dragos, Nozomi)</p>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+              <span>🔄 Backup & Disaster Recovery</span>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <div class="p-4 text-sm space-y-2" style="color:var(--text-secondary)">
+                <p>▸ Daily automated backups of SCADA project files, PLC programs, historian DB</p>
+                <p>▸ Offsite backup storage (air-gapped)</p>
+                <p>▸ RTO (Recovery Time Objective) &lt; 4 hours for water critical systems</p>
+                <p>▸ Annual DR drill to test restoration procedures</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Redundancy -->
+    <h3 class="text-lg font-bold mb-4">Redundancy & High-Availability Design</h3>
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="card p-5">
+        <h4 class="font-bold text-sm mb-3" style="color:var(--teal)">Server Redundancy</h4>
+        <ul class="text-xs space-y-2" style="color:var(--text-secondary)">
+          <li>▸ Primary + Hot-standby SCADA server (automatic failover &lt;1s)</li>
+          <li>▸ Redundant network switches (ring topology, STP/RSTP)</li>
+          <li>▸ RAID storage for historian database</li>
+          <li>▸ UPS on all OT servers (minimum 30 min autonomy)</li>
+          <li>▸ Diesel generator backup for control room</li>
+        </ul>
+      </div>
+      <div class="card p-5">
+        <h4 class="font-bold text-sm mb-3" style="color:var(--cyan)">Communication Redundancy</h4>
+        <ul class="text-xs space-y-2" style="color:var(--text-secondary)">
+          <li>▸ Dual fiber paths (ring + star to RTUs)</li>
+          <li>▸ Primary fiber + backup 4G/LTE for remote sites</li>
+          <li>▸ RTU store-and-forward: holds data locally if comms lost, uploads on reconnect</li>
+          <li>▸ Heartbeat watchdog — SCADA detects comms loss within 60s</li>
+        </ul>
+      </div>
+      <div class="card p-5">
+        <h4 class="font-bold text-sm mb-3" style="color:var(--amber)">PLC/Field Redundancy</h4>
+        <ul class="text-xs space-y-2" style="color:var(--text-secondary)">
+          <li>▸ Redundant CPU for main plant PLC (hot standby, sync'd)</li>
+          <li>▸ Redundant 24VDC power supplies in panels</li>
+          <li>▸ Dual I/O for critical measurements (voting logic 2oo3 for SIS)</li>
+          <li>▸ Pump lead-lag-standby: automatic switchover on fault</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="sep"/>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 6. CONFIGURATION TUTORIAL -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="config" class="py-20 px-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="section-tag">MODULE 05</div>
+    <h2 class="text-3xl md:text-4xl font-black mb-3">Configuration <span class="gradient-text">Tutorial</span></h2>
+    <p class="mb-10 max-w-3xl" style="color:var(--text-secondary);font-size:1.05rem">
+      Practical guide to configuring SCADA tags, alarms, trends, and communications — with embedded interactive examples.
+    </p>
+
+    <div class="grid md:grid-cols-2 gap-10">
+      <!-- Left: Tag configuration -->
+      <div>
+        <h3 class="text-lg font-bold mb-4">Tag Naming Convention</h3>
+        <div class="card p-5 mb-5">
+          <div class="text-xs font-bold mb-3 mono" style="color:var(--teal)">AWPT STANDARD TAG STRUCTURE</div>
+          <div class="p-3 rounded mono text-sm mb-3" style="background:#000d1a;border:1px solid var(--navy-border)">
+            <span style="color:var(--amber)">SITE</span>.<span style="color:var(--cyan)">AREA</span>.<span style="color:var(--green-ok)">DEVICE</span>_<span style="color:var(--teal)">INST</span>.<span style="color:var(--text-primary)">PARAMETER</span>
+          </div>
+          <div class="text-xs space-y-2" style="color:var(--text-secondary)">
+            <div><span style="color:var(--amber)">SITE</span> — Plant identifier (WTP01, PS47, WWTP03)</div>
+            <div><span style="color:var(--cyan)">AREA</span> — Process area (FILT, AERAT, INLET, DOSING)</div>
+            <div><span style="color:var(--green-ok)">DEVICE</span> — Instrument type (FIT=Flow, PIT=Pressure, LIT=Level, AIT=Analytical)</div>
+            <div><span style="color:var(--teal)">INST</span> — Instance number (001, 002…)</div>
+            <div><span style="color:var(--text-primary)">PARAM</span> — PV, SP, OUT, STAT, FAULT, MODE</div>
+          </div>
+          <div class="mt-3 p-2 rounded text-xs mono" style="background:rgba(0,212,200,0.05);border:1px solid rgba(0,212,200,0.15)">
+            <div style="color:var(--text-muted)">Examples:</div>
+            <div style="color:var(--teal)">WTP01.FILT.FIT_001.PV</div>
+            <div style="color:var(--teal)">PS47.PUMP.LIT_001.PV</div>
+            <div style="color:var(--teal)">WWTP03.AERAT.AIT_DO.PV</div>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-bold mb-4">Alarm Configuration Best Practices</h3>
+        <div class="card p-5 mb-5">
+          <div class="space-y-3">
+            <div class="flex gap-3 items-start">
+              <div class="w-3 h-3 rounded-full mt-1 flex-shrink-0" style="background:var(--red-alarm)"></div>
+              <div><div class="text-xs font-bold" style="color:var(--red-alarm)">CRITICAL (Priority 1)</div><div class="text-xs" style="color:var(--text-muted)">Immediate threat to safety or environment. Response: &lt;5 min. Examples: pump station overflow, Cl₂ dosing failure, treated water quality limit breach.</div></div>
+            </div>
+            <div class="flex gap-3 items-start">
+              <div class="w-3 h-3 rounded-full mt-1 flex-shrink-0" style="background:var(--amber)"></div>
+              <div><div class="text-xs font-bold" style="color:var(--amber)">HIGH (Priority 2)</div><div class="text-xs" style="color:var(--text-muted)">Requires prompt action to prevent escalation. Response: &lt;30 min. Examples: high turbidity, instrument calibration due, filter DP high.</div></div>
+            </div>
+            <div class="flex gap-3 items-start">
+              <div class="w-3 h-3 rounded-full mt-1 flex-shrink-0" style="background:var(--cyan)"></div>
+              <div><div class="text-xs font-bold" style="color:var(--cyan)">MEDIUM (Priority 3)</div><div class="text-xs" style="color:var(--text-muted)">Abnormal condition, corrective action within shift. Examples: pump runtime equalization due, VFD minor fault, minor flow deviation.</div></div>
+            </div>
+            <div class="flex gap-3 items-start">
+              <div class="w-3 h-3 rounded-full mt-1 flex-shrink-0" style="background:var(--text-muted)"></div>
+              <div><div class="text-xs font-bold">LOW (Priority 4)</div><div class="text-xs" style="color:var(--text-muted)">Informational — no immediate action needed. Examples: mode changes, daily reports generated, scheduled maintenance reminders.</div></div>
+            </div>
+          </div>
+          <div class="safety-note mt-4">
+            <span class="safety-icon">⚠️</span> <b>ISA-18.2 Target:</b> Alarm rate should not exceed 1 alarm per operator per 10 minutes in steady state. More than 10 alarms/10 min is considered a "flood." Alarm rationalization workshops are essential in AWPT projects.
+          </div>
+        </div>
+
+        <h3 class="text-lg font-bold mb-4">Communication Protocols</h3>
+        <div class="card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr style="background:rgba(0,212,200,0.08);border-bottom:1px solid var(--navy-border)">
+                  <th class="p-3 text-left" style="color:var(--teal)">Protocol</th>
+                  <th class="p-3 text-left" style="color:var(--teal)">Use Case</th>
+                  <th class="p-3 text-left" style="color:var(--teal)">Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid var(--navy-border)"><td class="p-3 font-bold mono">Modbus RTU/TCP</td><td class="p-3">Older PLCs, analyzers, VFDs</td><td class="p-3 text-muted" style="color:var(--text-muted)">Simple, universal, no security</td></tr>
+                <tr style="border-bottom:1px solid var(--navy-border)"><td class="p-3 font-bold mono">OPC-UA</td><td class="p-3">PLC↔SCADA standard interface</td><td class="p-3 text-muted" style="color:var(--text-muted)">Modern, secure, recommended</td></tr>
+                <tr style="border-bottom:1px solid var(--navy-border)"><td class="p-3 font-bold mono">PROFIBUS DP</td><td class="p-3">Field device to Siemens PLC</td><td class="p-3 text-muted" style="color:var(--text-muted)">Being replaced by PROFINET</td></tr>
+                <tr style="border-bottom:1px solid var(--navy-border)"><td class="p-3 font-bold mono">PROFINET</td><td class="p-3">Siemens ET200 remote I/O</td><td class="p-3 text-muted" style="color:var(--text-muted)">Industrial Ethernet based</td></tr>
+                <tr style="border-bottom:1px solid var(--navy-border)"><td class="p-3 font-bold mono">DNP3 / IEC60870</td><td class="p-3">Remote RTU telemetry</td><td class="p-3 text-muted" style="color:var(--text-muted)">Designed for WAN / radio links</td></tr>
+                <tr><td class="p-3 font-bold mono">MQTT / AMQP</td><td class="p-3">IoT / Cloud connectivity</td><td class="p-3 text-muted" style="color:var(--text-muted)">Lightweight, pub-sub model</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: HMI Simulator -->
+      <div>
+        <h3 class="text-lg font-bold mb-4">Live HMI Simulator</h3>
+        <div class="hmi-display mb-4">
+          <div class="p-4">
+            <div class="grid grid-cols-3 gap-3 mb-4">
+              <div class="card p-3 text-center" id="sim-flow-card">
+                <div class="hmi-label">INLET FLOW</div>
+                <div class="hmi-value" id="sim-flow" style="color:var(--cyan)">--</div>
+                <div class="text-xs" style="color:var(--text-muted)">m³/h</div>
+              </div>
+              <div class="card p-3 text-center" id="sim-level-card">
+                <div class="hmi-label">WELL LEVEL</div>
+                <div class="hmi-value" id="sim-level" style="color:var(--teal)">--</div>
+                <div class="text-xs" style="color:var(--text-muted)">%</div>
+              </div>
+              <div class="card p-3 text-center" id="sim-cl2-card">
+                <div class="hmi-label">Cl₂ RESIDUAL</div>
+                <div class="hmi-value" id="sim-cl2" style="color:var(--green-ok)">--</div>
+                <div class="text-xs" style="color:var(--text-muted)">mg/L</div>
+              </div>
+              <div class="card p-3 text-center" id="sim-ph-card">
+                <div class="hmi-label">pH</div>
+                <div class="hmi-value" id="sim-ph" style="color:var(--teal)">--</div>
+                <div class="text-xs" style="color:var(--text-muted)">pH units</div>
+              </div>
+              <div class="card p-3 text-center" id="sim-turb-card">
+                <div class="hmi-label">TURBIDITY</div>
+                <div class="hmi-value" id="sim-turb" style="color:var(--amber)">--</div>
+                <div class="text-xs" style="color:var(--text-muted)">NTU</div>
+              </div>
+              <div class="card p-3 text-center" id="sim-press-card">
+                <div class="hmi-label">DISCHARGE P</div>
+                <div class="hmi-value" id="sim-press" style="color:var(--cyan)">--</div>
+                <div class="text-xs" style="color:var(--text-muted)">bar</div>
+              </div>
+            </div>
+
+            <!-- Pump status -->
+            <div class="flex gap-2 mb-4">
+              <div class="flex-1 card p-2 text-center text-xs">
+                <div class="status-dot status-ok mb-1"></div>
+                <div>P-01 RUN</div>
+                <div style="color:var(--text-muted)" id="sim-p1-rpm">0 RPM</div>
+              </div>
+              <div class="flex-1 card p-2 text-center text-xs">
+                <div class="status-dot status-warn mb-1"></div>
+                <div>P-02 STBY</div>
+                <div style="color:var(--text-muted)">0 RPM</div>
+              </div>
+              <div class="flex-1 card p-2 text-center text-xs">
+                <div class="status-dot mb-1" style="background:var(--text-muted)"></div>
+                <div>P-03 OFF</div>
+                <div style="color:var(--text-muted)">0 RPM</div>
+              </div>
+            </div>
+
+            <!-- Alarm list -->
+            <div class="text-xs font-bold mb-2 mono" style="color:var(--text-muted)">ACTIVE ALARMS</div>
+            <div id="sim-alarms" style="min-height:60px">
+              <div class="alarm-row alarm-info">
+                <span class="status-dot status-ok"></span>
+                <span style="color:var(--text-muted)">No active alarms — System Normal</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-2 mb-4">
+          <button class="btn-primary flex-1" onclick="startSimulator()">▶ Start Simulation</button>
+          <button class="btn-outline" onclick="stopSimulator()">⏹ Stop</button>
+          <button class="btn-outline" onclick="triggerAlarm()">🔔 Trigger Alarm</button>
+        </div>
+
+        <!-- Trend chart -->
+        <h3 class="text-lg font-bold mb-3">Tag Trend Display</h3>
+        <div class="card p-4">
+          <canvas id="trend-chart" height="160"></canvas>
+        </div>
+
+        <h3 class="text-lg font-bold mt-6 mb-4">HMI Screen Design Best Practices</h3>
+        <div class="card p-5">
+          <ul class="text-sm space-y-2" style="color:var(--text-secondary)">
+            <li class="flex gap-2"><span style="color:var(--teal)">▸</span> Use <b>gray as the neutral background</b> (not white/black) — ISA-101 guideline. Colors reserved for alarm states only.</li>
+            <li class="flex gap-2"><span style="color:var(--teal)">▸</span> <b>No 3D effects or animated graphics</b> in steady state — distracts operators from genuine alarms.</li>
+            <li class="flex gap-2"><span style="color:var(--teal)">▸</span> <b>Faceplates</b> for every field device — consistent, pop-up detail view per instrument.</li>
+            <li class="flex gap-2"><span style="color:var(--teal)">▸</span> Critical values displayed in <b>large, readable digits</b> — visible from 3m away.</li>
+            <li class="flex gap-2"><span style="color:var(--teal)">▸</span> <b>Navigation hierarchy:</b> Overview → Area → Unit → Equipment. Max 3 clicks to any faceplate.</li>
+            <li class="flex gap-2"><span style="color:var(--teal)">▸</span> <b>Situational awareness:</b> Always show plant status summary on every screen header.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="sep"/>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 7. MAINTENANCE & OPERATIONS PLAYBOOK -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="maintenance" class="py-20 px-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="section-tag">MODULE 06</div>
+    <h2 class="text-3xl md:text-4xl font-black mb-3">Maintenance &amp; Operations <span class="gradient-text">Playbook</span></h2>
+    <p class="mb-10 max-w-3xl" style="color:var(--text-secondary);font-size:1.05rem">
+      A structured approach to keeping SCADA systems at peak performance. Use the interactive checklist to track your activities.
+    </p>
+
+    <div class="grid md:grid-cols-2 gap-10">
+      <!-- Maintenance checklist -->
+      <div>
+        <div class="flex gap-2 mb-4">
+          <button class="btn-outline active" onclick="switchChecklist('daily')">Daily</button>
+          <button class="btn-outline" onclick="switchChecklist('weekly')">Weekly</button>
+          <button class="btn-outline" onclick="switchChecklist('monthly')">Monthly</button>
+          <button class="btn-outline" onclick="switchChecklist('yearly')">Yearly</button>
+        </div>
+
+        <div class="card p-5" id="checklist-container">
+          <div class="flex justify-between items-center mb-4">
+            <div class="text-sm font-bold mono" style="color:var(--teal)" id="checklist-title">DAILY SCADA MAINTENANCE TASKS</div>
+            <div class="text-xs" style="color:var(--text-muted)" id="checklist-progress">0/0 complete</div>
+          </div>
+          <div id="checklist-items"></div>
+          <div class="mt-4">
+            <div class="flex justify-between text-xs mb-1"><span style="color:var(--text-muted)">Completion</span><span id="checklist-pct" style="color:var(--teal)">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="checklist-bar" style="width:0%"></div></div>
+          </div>
+          <div class="flex gap-2 mt-4">
+            <button class="btn-outline text-xs" onclick="resetChecklist()">Reset</button>
+            <button class="btn-primary text-xs" onclick="checkAll()">Mark All Complete</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Troubleshooting & KPIs -->
+      <div>
+        <h3 class="text-lg font-bold mb-4">Troubleshooting Common Issues</h3>
+        <div class="space-y-2 mb-8">
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+              <span>📡 Communication Loss to RTU/PLC</span>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <div class="p-4 text-xs space-y-1" style="color:var(--text-secondary)">
+                <p><b style="color:var(--teal)">1.</b> Check SCADA server communication log for error code</p>
+                <p><b style="color:var(--teal)">2.</b> Ping the RTU/PLC IP from the SCADA server</p>
+                <p><b style="color:var(--teal)">3.</b> Check network switch port status (link, speed, duplex)</p>
+                <p><b style="color:var(--teal)">4.</b> Check fiber / cable continuity if ping fails</p>
+                <p><b style="color:var(--teal)">5.</b> Verify RTU/PLC power supply — check panel UPS</p>
+                <p><b style="color:var(--teal)">6.</b> If remote site: verify 4G SIM status with carrier</p>
+                <p><b style="color:var(--teal)">7.</b> If all fail: dispatch technician for site visit</p>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+              <span>🔔 False / Nuisance Alarms</span>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <div class="p-4 text-xs space-y-1" style="color:var(--text-secondary)">
+                <p><b style="color:var(--teal)">Root Causes:</b> Incorrect alarm limits, noisy analog signal, instrument calibration drift, alarm shelving not used during maintenance</p>
+                <p><b style="color:var(--teal)">Fixes:</b> Run alarm rationalization. Add deadband (5% typical). Check instrument calibration. Implement maintenance mode suppression. Review and adjust alarm setpoints using process historian data.</p>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+              <span>🖥️ HMI Freezes / Slow Response</span>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <div class="p-4 text-xs space-y-1" style="color:var(--text-secondary)">
+                <p><b style="color:var(--teal)">1.</b> Check SCADA server CPU and RAM utilization</p>
+                <p><b style="color:var(--teal)">2.</b> Check disk space on historian server (may be full)</p>
+                <p><b style="color:var(--teal)">3.</b> Review SCADA error log for memory leaks</p>
+                <p><b style="color:var(--teal)">4.</b> Check network utilization — may be saturation event</p>
+                <p><b style="color:var(--teal)">5.</b> Restart SCADA gateway service (not server) if safe</p>
+                <p><b style="color:var(--teal)">6.</b> Escalate to vendor support if recurring</p>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+              <span>📊 Historian Data Gaps</span>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <div class="p-4 text-xs space-y-1" style="color:var(--text-secondary)">
+                <p><b style="color:var(--teal)">Cause A:</b> Communication outage — RTU store-and-forward should backfill. Verify backfill is configured and ran after comms restored.</p>
+                <p><b style="color:var(--teal)">Cause B:</b> Historian disk full — archives not created. Check archiver service health. Clean old archives per retention policy.</p>
+                <p><b style="color:var(--teal)">Cause C:</b> Tag scan class set too slow. Review tag scan classes in SCADA configuration.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-bold mb-4">SCADA KPIs to Monitor</h3>
+        <div class="card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr style="background:rgba(0,212,200,0.08);border-bottom:1px solid var(--navy-border)">
+                  <th class="p-3 text-left" style="color:var(--teal)">KPI</th>
+                  <th class="p-3 text-left" style="color:var(--teal)">Target</th>
+                  <th class="p-3 text-left" style="color:var(--teal)">Frequency</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid var(--navy-border)"><td class="p-3">System Uptime</td><td class="p-3 font-bold" style="color:var(--green-ok)">≥ 99.5%</td><td class="p-3">Monthly</td></tr>
+                <tr style="border-bottom:1px solid var(--navy-border)"><td class="p-3">Alarm Response Time</td><td class="p-3 font-bold" style="color:var(--green-ok)">&lt; 5 min (critical)</td><td class="p-3">Weekly</td></tr>
+                <tr style="border-bottom:1px solid var(--navy-border)"><td class="p-3">Alarm Rate (steady state)</td><td class="p-3 font-bold" style="color:var(--green-ok)">&lt; 1/10 min</td><td class="p-3">Daily</td></tr>
+                <tr style="border-bottom:1px solid var(--navy-border)"><td class="p-3">Standing Alarms</td><td class="p-3 font-bold" style="color:var(--green-ok)">&lt; 5</td><td class="p-3">Daily</td></tr>
+                <tr style="border-bottom:1px solid var(--navy-border)"><td class="p-3">Data Completeness</td><td class="p-3 font-bold" style="color:var(--green-ok)">≥ 99%</td><td class="p-3">Monthly</td></tr>
+                <tr><td class="p-3">Tag Calibration Due</td><td class="p-3 font-bold" style="color:var(--green-ok)">0 overdue</td><td class="p-3">Monthly</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="sep"/>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 8. ADVANCED TOPICS & ROI -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="advanced" class="py-20 px-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="section-tag">MODULE 07</div>
+    <h2 class="text-3xl md:text-4xl font-black mb-3">Advanced Topics &amp; <span class="gradient-text">ROI</span></h2>
+    <p class="mb-10 max-w-3xl" style="color:var(--text-secondary);font-size:1.05rem">
+      Moving beyond basic SCADA to IIoT, AI-driven analytics, and strategic value creation for O&amp;M contracts.
+    </p>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+      <div class="card p-6">
+        <div class="text-2xl mb-3">🤖</div>
+        <h3 class="font-bold mb-2" style="color:var(--teal)">AI / ML for Predictive Analytics</h3>
+        <p class="text-sm mb-4" style="color:var(--text-secondary)">Integrate historian data with ML models to predict pump failures 2–4 weeks ahead using vibration, current, and flow efficiency trends. Platforms like Azure ML and AWS SageMaker can be connected via MQTT from the SCADA historian.</p>
+        <div class="flex flex-wrap gap-1">
+          <span class="proto-pill">Azure IoT</span><span class="proto-pill">MATLAB</span><span class="proto-pill">Python</span>
+        </div>
+      </div>
+      <div class="card p-6">
+        <div class="text-2xl mb-3">☁️</div>
+        <h3 class="font-bold mb-2" style="color:var(--cyan)">Cloud Integration (IIoT)</h3>
+        <p class="text-sm mb-4" style="color:var(--text-secondary)">AWPT's O&M teams can access a unified IIoT dashboard across all sites. Cloud-based historians (AVEVA Connect, Ignition Cloud Edition) allow executive dashboards accessible on any device while keeping OT networks air-gapped.</p>
+        <div class="flex flex-wrap gap-1">
+          <span class="proto-pill">MQTT/Sparkplug</span><span class="proto-pill">REST API</span>
+        </div>
+      </div>
+      <div class="card p-6">
+        <div class="text-2xl mb-3">⚡</div>
+        <h3 class="font-bold mb-2" style="color:var(--amber)">Energy Management</h3>
+        <p class="text-sm mb-4" style="color:var(--text-secondary)">SCADA-integrated energy management: pump scheduling to avoid peak tariff periods (Saudi SEC time-of-use tariffs), power factor monitoring, VFD optimization, and real-time specific energy (kWh/m³) KPI tracking.</p>
+        <div class="flex flex-wrap gap-1">
+          <span class="proto-pill">IEC 61968</span><span class="proto-pill">DLMS</span>
+        </div>
+      </div>
+      <div class="card p-6">
+        <div class="text-2xl mb-3">🗺️</div>
+        <h3 class="font-bold mb-2" style="color:var(--green-ok)">GIS Integration</h3>
+        <p class="text-sm mb-4" style="color:var(--text-secondary)">Linking SCADA real-time data with GIS maps enables geographic visualization of network pressure, flow, and water quality. Critical for Saudi NWC network management and rapid leak response.</p>
+        <div class="flex flex-wrap gap-1">
+          <span class="proto-pill">ESRI ArcGIS</span><span class="proto-pill">QGIS</span>
+        </div>
+      </div>
+      <div class="card p-6">
+        <div class="text-2xl mb-3">🔄</div>
+        <h3 class="font-bold mb-2" style="color:var(--teal)">Modern Platform Migration</h3>
+        <p class="text-sm mb-4" style="color:var(--text-secondary)">Migrating from legacy WinCC or iFIX to Ignition offers unlimited tags, web-based access, and better cybersecurity. AWPT can offer this as a value-add service on O&M contracts, typically 30–50% lower lifetime cost.</p>
+        <div class="flex flex-wrap gap-1">
+          <span class="proto-pill">Ignition</span><span class="proto-pill">AVEVA</span>
+        </div>
+      </div>
+      <div class="card p-6">
+        <div class="text-2xl mb-3">💰</div>
+        <h3 class="font-bold mb-2" style="color:var(--amber)">O&M ROI Optimization</h3>
+        <p class="text-sm mb-4" style="color:var(--text-secondary)">Good SCADA directly improves AWPT's O&M margin: fewer site visits (remote diagnostics), less chemical waste (auto-dosing optimization), reduced energy (VFD control), and lower penalty risk (compliance automation).</p>
+        <div class="flex flex-wrap gap-1">
+          <span class="proto-pill">20-40% energy saving</span><span class="proto-pill">30% fewer visits</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Saudi Case Studies -->
+    <h3 class="text-xl font-bold mb-6">Saudi Water Sector — SCADA Impact Case Studies</h3>
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="card p-5 card-glow">
+        <div class="section-tag mb-3">Case Study 01</div>
+        <h4 class="font-bold text-sm mb-2">Riyadh WTP Network Telemetry</h4>
+        <p class="text-xs mb-3" style="color:var(--text-secondary)">NWC project: 340 remote pumping stations integrated to central SCADA over 4G LTE. Result: Operator headcount reduced by 45%, alarm-to-response time dropped from 2h to 22 minutes, NRW reduced by 18% through pressure management automation.</p>
+        <div class="flex flex-wrap gap-1">
+          <span class="proto-pill">NWC</span><span class="proto-pill">Ignition</span><span class="proto-pill">4G LTE</span>
+        </div>
+      </div>
+      <div class="card p-5">
+        <div class="section-tag mb-3">Case Study 02</div>
+        <h4 class="font-bold text-sm mb-2">Jeddah WWTP Aeration Optimization</h4>
+        <p class="text-xs mb-3" style="color:var(--text-secondary)">DO-based aeration control implemented on 3 x 10 MLD MBR plants. Blower VFD control via SCADA reduced aeration energy by 36% (SAR 2.1M/year saving). Effluent DO consistently maintained within ±0.2 mg/L of setpoint.</p>
+        <div class="flex flex-wrap gap-1">
+          <span class="proto-pill">Siemens WinCC</span><span class="proto-pill">S7-1500</span>
+        </div>
+      </div>
+      <div class="card p-5">
+        <div class="section-tag mb-3">Case Study 03</div>
+        <h4 class="font-bold text-sm mb-2">SWCC RO Plant Predictive Maintenance</h4>
+        <p class="text-xs mb-3" style="color:var(--text-secondary)">High-pressure pump bearing failure prediction using SCADA vibration trend data + ML model. Caught 4 pending failures in first year, avoiding unplanned outages worth SAR 8.7M in lost production and emergency repair costs.</p>
+        <div class="flex flex-wrap gap-1">
+          <span class="proto-pill">SWCC</span><span class="proto-pill">AVEVA PI</span><span class="proto-pill">Azure ML</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="sep"/>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 9. INTERACTIVE TOOLS -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="tools" class="py-20 px-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="section-tag">MODULE 08</div>
+    <h2 class="text-3xl md:text-4xl font-black mb-10">Interactive <span class="gradient-text">Tools</span></h2>
+
+    <!-- Process Flow Explorer -->
+    <h3 class="text-xl font-bold mb-4">Water Treatment Process Flow Explorer</h3>
+    <p class="text-sm mb-6" style="color:var(--text-secondary)">Click any process node to see the SCADA monitoring points for that stage.</p>
+    <div class="card p-6 mb-12 overflow-x-auto">
+      <div class="flex items-center gap-2 min-w-max">
+        <div class="process-node" onclick="showProcessInfo('intake')">
+          <span class="node-icon">🌊</span>Raw Water<br/>Intake
+        </div>
+        <div style="color:var(--teal);font-size:1.5rem">→</div>
+        <div class="process-node" onclick="showProcessInfo('screens')">
+          <span class="node-icon">🔲</span>Screening &amp;<br/>Grit Removal
+        </div>
+        <div style="color:var(--teal);font-size:1.5rem">→</div>
+        <div class="process-node" onclick="showProcessInfo('coag')">
+          <span class="node-icon">🧪</span>Coagulation &amp;<br/>Flocculation
+        </div>
+        <div style="color:var(--teal);font-size:1.5rem">→</div>
+        <div class="process-node" onclick="showProcessInfo('sed')">
+          <span class="node-icon">🏊</span>Sedimentation
+        </div>
+        <div style="color:var(--teal);font-size:1.5rem">→</div>
+        <div class="process-node" onclick="showProcessInfo('filt')">
+          <span class="node-icon">♦️</span>Filtration
+        </div>
+        <div style="color:var(--teal);font-size:1.5rem">→</div>
+        <div class="process-node" onclick="showProcessInfo('disinfect')">
+          <span class="node-icon">⚗️</span>Disinfection<br/>(Chlorination)
+        </div>
+        <div style="color:var(--teal);font-size:1.5rem">→</div>
+        <div class="process-node" onclick="showProcessInfo('clear')">
+          <span class="node-icon">💧</span>Clear Water<br/>Storage
+        </div>
+        <div style="color:var(--teal);font-size:1.5rem">→</div>
+        <div class="process-node" onclick="showProcessInfo('dist')">
+          <span class="node-icon">🏙️</span>Distribution<br/>Network
+        </div>
+      </div>
+      <div id="process-info-box" class="mt-6 hidden card p-4">
+        <div class="text-sm font-bold mb-2" id="process-info-title" style="color:var(--teal)"></div>
+        <div class="text-sm" id="process-info-body" style="color:var(--text-secondary)"></div>
+      </div>
+    </div>
+
+    <!-- Quiz Section -->
+    <h3 class="text-xl font-bold mb-6">Knowledge Check Quiz</h3>
+    <div class="card p-6 max-w-3xl" id="quiz-container">
+      <div id="quiz-body">
+        <!-- Quiz generated by JS -->
+      </div>
+      <div id="quiz-result" class="hidden text-center py-6">
+        <div class="text-4xl mb-3">🎯</div>
+        <div class="text-xl font-bold mb-2" id="quiz-score-text"></div>
+        <div class="text-sm mb-4" id="quiz-feedback" style="color:var(--text-secondary)"></div>
+        <button class="btn-primary" onclick="restartQuiz()">Restart Quiz</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="sep"/>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- 10. GLOSSARY & RESOURCES -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="glossary" class="py-20 px-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="section-tag">MODULE 09</div>
+    <h2 class="text-3xl md:text-4xl font-black mb-10">Glossary &amp; <span class="gradient-text">Resources</span></h2>
+
+    <div class="grid md:grid-cols-2 gap-10">
+      <div>
+        <h3 class="text-lg font-bold mb-4">SCADA Glossary</h3>
+        <div id="glossary-list">
+          <!-- Generated by JS -->
+        </div>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold mb-4">Standards &amp; Regulations</h3>
+        <div class="space-y-3 mb-8">
+          <div class="card p-4"><div class="font-bold text-sm mb-1" style="color:var(--teal)">IEC 62443</div><div class="text-xs" style="color:var(--text-secondary)">Industrial Automation and Control Systems Security — the key cybersecurity standard for OT/SCADA systems. Required reference for all AWPT SCADA designs.</div></div>
+          <div class="card p-4"><div class="font-bold text-sm mb-1" style="color:var(--teal)">ISA-18.2</div><div class="text-xs" style="color:var(--text-secondary)">Management of Alarm Systems for the Process Industries — defines alarm philosophy, rationalization, and KPIs.</div></div>
+          <div class="card p-4"><div class="font-bold text-sm mb-1" style="color:var(--teal)">IEC 61511</div><div class="text-xs" style="color:var(--text-secondary)">Functional Safety — Safety Instrumented Systems. Governs SIS/ESD systems at AWPT water treatment plants.</div></div>
+          <div class="card p-4"><div class="font-bold text-sm mb-1" style="color:var(--amber)">NWC Standards (Saudi)</div><div class="text-xs" style="color:var(--text-secondary)">National Water Company technical standards for water quality, metering, and monitoring in Saudi Arabia.</div></div>
+          <div class="card p-4"><div class="font-bold text-sm mb-1" style="color:var(--amber)">SWCC Standards (Saudi)</div><div class="text-xs" style="color:var(--text-secondary)">Saline Water Conversion Corporation standards for desalination plant automation, telemetry, and reporting.</div></div>
+          <div class="card p-4"><div class="font-bold text-sm mb-1" style="color:var(--red-alarm)">OTCC — NCA (Saudi)</div><div class="text-xs" style="color:var(--text-secondary)">Operational Technology Cybersecurity Controls issued by the National Cybersecurity Authority — mandatory for critical infrastructure including water utilities in the Kingdom of Saudi Arabia.</div></div>
+        </div>
+
+        <h3 class="text-lg font-bold mb-4">Key Learning Resources</h3>
+        <div class="space-y-2">
+          <div class="card p-3 flex gap-3 items-center">
+            <span class="text-lg">📚</span>
+            <div><div class="text-sm font-bold">SCADA: Supervisory Control and Data Acquisition — Bailey &amp; Wright</div><div class="text-xs" style="color:var(--text-muted)">Definitive technical reference text</div></div>
+          </div>
+          <div class="card p-3 flex gap-3 items-center">
+            <span class="text-lg">🎓</span>
+            <div><div class="text-sm font-bold">Inductive University (Ignition)</div><div class="text-xs" style="color:var(--text-muted)">inductiveuniversity.com — free Ignition SCADA training with certification</div></div>
+          </div>
+          <div class="card p-3 flex gap-3 items-center">
+            <span class="text-lg">🏛️</span>
+            <div><div class="text-sm font-bold">ISA (International Society of Automation)</div><div class="text-xs" style="color:var(--text-muted)">isa.org — standards, courses, and CSSA/CAP certification programs</div></div>
+          </div>
+          <div class="card p-3 flex gap-3 items-center">
+            <span class="text-lg">💻</span>
+            <div><div class="text-sm font-bold">Siemens TIA Portal Training</div><div class="text-xs" style="color:var(--text-muted)">Online and KSA-based Siemens training center (Riyadh)</div></div>
+          </div>
+          <div class="card p-3 flex gap-3 items-center">
+            <span class="text-lg">🔒</span>
+            <div><div class="text-sm font-bold">SANS ICS Security (SAN508/612)</div><div class="text-xs" style="color:var(--text-muted)">Gold standard OT/SCADA cybersecurity training courses</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- FOOTER -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<footer class="py-10 px-6 text-center border-t" style="border-color:var(--navy-border)">
+  <div class="gradient-text font-black text-lg mb-2">AWPT SCADA Education Platform</div>
+  <p class="text-sm mb-1" style="color:var(--text-muted)">Alkhorayef Water &amp; Power Technologies — Water &amp; Wastewater Infrastructure</p>
+  <p class="text-xs" style="color:var(--text-muted)">For training and educational purposes. Always follow your site-specific SOPs and local regulatory requirements.</p>
+  <div class="flex flex-wrap gap-3 justify-center mt-4">
+    <span class="proto-pill">IEC 62443</span><span class="proto-pill">ISA-18.2</span><span class="proto-pill">IEC 61511</span><span class="proto-pill">NWC</span><span class="proto-pill">SWCC</span><span class="proto-pill">OTCC-NCA</span>
+  </div>
+</footer>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- MODALS -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="about-modal" onclick="closeModal('about-modal')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-bold gradient-text">About This Course</h3>
+      <button class="text-xl" onclick="closeModal('about-modal')" style="color:var(--text-muted)">✕</button>
+    </div>
+    <p class="text-sm mb-3" style="color:var(--text-secondary)">This interactive SCADA education platform was designed for engineers, technicians, project managers, and entrepreneurs working in the Saudi and GCC water sector — specifically in the context of Alkhorayef Water &amp; Power Technologies (AWPT) EPC and O&M operations.</p>
+    <p class="text-sm mb-3" style="color:var(--text-secondary)">It covers:</p>
+    <ul class="text-sm space-y-1 mb-4" style="color:var(--text-secondary)">
+      <li>▸ SCADA fundamentals and architecture</li>
+      <li>▸ Real-world application in water treatment, WWTP, desalination, pumping</li>
+      <li>▸ Interactive HMI simulator and live tag display</li>
+      <li>▸ Implementation guidance and vendor selection</li>
+      <li>▸ Cybersecurity per NCA/OTCC requirements</li>
+      <li>▸ Maintenance checklists and troubleshooting guides</li>
+      <li>▸ Advanced IIoT, AI/ML, and ROI topics</li>
+      <li>▸ Knowledge quiz and glossary</li>
+    </ul>
+    <div class="safety-note">
+      <span class="safety-icon">ℹ️</span> This is an educational reference. Always consult your site-specific documentation, vendor manuals, and qualified personnel before making any changes to live SCADA systems.
+    </div>
+    <button class="btn-primary mt-4 w-full" onclick="closeModal('about-modal')">Start Learning</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="rtu-modal" onclick="closeModal('rtu-modal')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-bold gradient-text">RTU vs PLC — Deep Dive</h3>
+      <button class="text-xl" onclick="closeModal('rtu-modal')" style="color:var(--text-muted)">✕</button>
+    </div>
+    <div class="card p-4 mb-4">
+      <div class="font-bold text-sm mb-2" style="color:var(--teal)">RTU (Remote Terminal Unit)</div>
+      <ul class="text-sm space-y-1" style="color:var(--text-secondary)">
+        <li>▸ Designed for wide-area, harsh environments</li>
+        <li>▸ Ruggedized for outdoor/buried installation</li>
+        <li>▸ WAN communication protocols: DNP3, IEC 60870-5</li>
+        <li>▸ Store-and-forward data buffering</li>
+        <li>▸ Lower I/O count, simpler logic</li>
+        <li>▸ Used at unmanned remote pumping stations, booster stations</li>
+      </ul>
+    </div>
+    <div class="card p-4">
+      <div class="font-bold text-sm mb-2" style="color:var(--cyan)">PLC (Programmable Logic Controller)</div>
+      <ul class="text-sm space-y-1" style="color:var(--text-secondary)">
+        <li>▸ High-speed deterministic real-time control</li>
+        <li>▸ Rich I/O options, modular expansion</li>
+        <li>▸ Complex ladder/function block/structured text programming</li>
+        <li>▸ LAN protocols: OPC-UA, Modbus TCP, PROFINET</li>
+        <li>▸ Used at main plant control panels, process areas</li>
+        <li>▸ Examples: Siemens S7-1500, Allen Bradley ControlLogix, Schneider M580</li>
+      </ul>
+    </div>
+    <button class="btn-outline mt-4 w-full" onclick="closeModal('rtu-modal')">Close</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="hmi-modal" onclick="closeModal('hmi-modal')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-bold gradient-text">HMI System Design</h3>
+      <button class="text-xl" onclick="closeModal('hmi-modal')" style="color:var(--text-muted)">✕</button>
+    </div>
+    <p class="text-sm mb-4" style="color:var(--text-secondary)">Modern HMI design follows ISA-101 High Performance HMI standard. Key principles:</p>
+    <div class="space-y-3 text-sm" style="color:var(--text-secondary)">
+      <div>▸ <b style="color:var(--teal)">Situational Awareness:</b> Operators must grasp the plant state in under 5 seconds from any screen</div>
+      <div>▸ <b style="color:var(--teal)">Color Coding:</b> Gray = normal, Yellow = warning, Red = alarm, Green = OK/running, Blue = info/manual</div>
+      <div>▸ <b style="color:var(--teal)">Screen Hierarchy:</b> Level 1 (overview) → Level 2 (area) → Level 3 (unit) → Level 4 (faceplate/trend)</div>
+      <div>▸ <b style="color:var(--teal)">No decoration:</b> Every pixel serves a purpose. No logos, animations, or 3D effects that don't convey process state</div>
+      <div>▸ <b style="color:var(--teal)">Consistency:</b> All flow goes left to right. All temperature scales the same direction. No surprises.</div>
+      <div>▸ <b style="color:var(--teal)">Acknowledgment:</b> Critical alarms require explicit operator acknowledgment — automated clearance is not acceptable</div>
+    </div>
+    <div class="safety-note mt-4">
+      <span class="safety-icon">⚠️</span> Poor HMI design is a documented contributor to major industrial incidents. AWPT engineers should complete ISA-101 training before designing plant HMI screens.
+    </div>
+    <button class="btn-outline mt-4 w-full" onclick="closeModal('hmi-modal')">Close</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="process-modal" onclick="closeModal('process-modal')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-bold gradient-text" id="process-modal-title">Process Stage</h3>
+      <button class="text-xl" onclick="closeModal('process-modal')" style="color:var(--text-muted)">✕</button>
+    </div>
+    <div id="process-modal-body" class="text-sm" style="color:var(--text-secondary)"></div>
+    <button class="btn-outline mt-4 w-full" onclick="closeModal('process-modal')">Close</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<script>
+// ── Navigation ──
+function scrollTo(id) {
+  document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+}
+
+// ── Tabs ──
+function switchTab(containerID, tabID) {
+  const container = document.getElementById(containerID) || document.body;
+  container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+tabID)?.classList.add('active');
+  const buttons = document.querySelectorAll(`[onclick*="switchTab('${containerID}"]`);
+  buttons.forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+// ── Modals ──
+function openModal(id) { document.getElementById(id)?.classList.add('open'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+
+// ── Accordion ──
+function toggleAccordion(header) {
+  const body = header.nextElementSibling;
+  const arrow = header.querySelector('.accordion-arrow');
+  body.classList.toggle('open');
+  arrow?.classList.toggle('open');
+}
+
+// ── Architecture layers ──
+function toggleArch(el, id) {
+  const panel = document.getElementById(id);
+  if (!panel) return;
+  const isOpen = panel.style.maxHeight && panel.style.maxHeight !== '0px';
+  panel.style.maxHeight = isOpen ? '0px' : '400px';
+}
+
+// ── Simulator ──
+let simInterval = null;
+let trendData = [];
+const maxTrendPoints = 20;
+
+function randBetween(min,max) { return (Math.random()*(max-min)+min).toFixed(2); }
+function randInt(min,max) { return Math.floor(Math.random()*(max-min+1)+min); }
+
+function updateSimulator() {
+  const flow  = randBetween(10800,13200);
+  const level = randBetween(45,75);
+  const cl2   = randBetween(0.55,0.82);
+  const ph    = randBetween(7.1,7.6);
+  const turb  = randBetween(0.18,0.65);
+  const press = randBetween(3.8,4.5);
+  const rpm   = randInt(1400,1520);
+
+  setVal('sim-flow', flow, 'sim-flow-card');
+  setVal('sim-level', parseFloat(level).toFixed(1), 'sim-level-card');
+  setVal('sim-cl2', cl2, 'sim-cl2-card');
+  setVal('sim-ph', ph, 'sim-ph-card');
+  setVal('sim-turb', turb, 'sim-turb-card');
+  setVal('sim-press', press, 'sim-press-card');
+  document.getElementById('sim-p1-rpm').textContent = rpm + ' RPM';
+
+  trendData.push(parseFloat(flow));
+  if (trendData.length > maxTrendPoints) trendData.shift();
+  updateTrendChart();
+}
+
+function setVal(id, val, cardId) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = val; el.classList.remove('tag-updated'); void el.offsetWidth; el.classList.add('tag-updated'); }
+}
+
+function startSimulator() {
+  if (simInterval) clearInterval(simInterval);
+  simInterval = setInterval(updateSimulator, 1500);
+  updateSimulator();
+  clearAlarms();
+}
+function stopSimulator() { if(simInterval){clearInterval(simInterval);simInterval=null;} }
+function clearAlarms() {
+  document.getElementById('sim-alarms').innerHTML = '<div class="alarm-row alarm-info"><span class="status-dot status-ok"></span><span style="color:var(--text-muted)">No active alarms — System Normal</span></div>';
+}
+function triggerAlarm() {
+  const alarms = [
+    {cls:'alarm-critical',dot:'status-alarm',msg:'WTP01.CL2.RESIDUAL LOW — 0.12 mg/L (Limit: 0.20 mg/L)'},
+    {cls:'alarm-warning',dot:'status-warn',msg:'PS47.PUMP.P03 FAULT — Motor overload trip'},
+    {cls:'alarm-info',dot:'status-ok',msg:'WTP01.FILT.DP_01 HIGH — Backwash initiated'},
+    {cls:'alarm-critical',dot:'status-alarm',msg:'WWTP03.INLET.LEVEL HIGH HIGH — Overflow risk'},
+    {cls:'alarm-warning',dot:'status-warn',msg:'PS12.COMM LOST — No response from RTU (>60s)'},
+  ];
+  const a = alarms[Math.floor(Math.random()*alarms.length)];
+  const now = new Date().toLocaleTimeString();
+  const html = `<div class="alarm-row ${a.cls}"><span class="status-dot ${a.dot}"></span><span style="color:var(--text-muted);min-width:70px">${now}</span><span>${a.msg}</span></div>`;
+  const box = document.getElementById('sim-alarms');
+  if(box) { box.innerHTML = html + box.innerHTML; if(box.children.length > 5) box.removeChild(box.lastChild); }
+}
+
+// ── Trend chart ──
+let trendChart = null;
+function updateTrendChart() {
+  if (!trendChart) return;
+  trendChart.data.labels = trendData.map((_,i) => i+1);
+  trendChart.data.datasets[0].data = trendData;
+  trendChart.update('none');
+}
+function initTrendChart() {
+  const ctx = document.getElementById('trend-chart');
+  if (!ctx) return;
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Inlet Flow (m³/h)',
+        data: [],
+        borderColor: '#00d4c8',
+        backgroundColor: 'rgba(0,212,200,0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      animation: false,
+      plugins: { legend: { labels: { color: '#8eacc8', font: { family: 'Share Tech Mono', size: 10 } } } },
+      scales: {
+        x: { ticks: { color: '#4a6888', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#4a6888', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' }, min: 10000, max: 14000 }
+      }
+    }
+  });
+}
+
+// ── Maintenance checklists ──
+const checklists = {
+  daily: {
+    title: 'DAILY SCADA MAINTENANCE TASKS',
+    items: [
+      'Review overnight alarm log — acknowledge and investigate any unresolved alarms',
+      'Verify SCADA server status: CPU usage < 70%, RAM usage < 80%, disk space > 20% free',
+      'Confirm all RTU/PLC communication links are ONLINE (no "COMM LOST" tags)',
+      'Check historian service is running and recording data (verify no data gaps last 24h)',
+      'Review active alarm list — resolve any standing alarms from previous shift',
+      'Verify all critical instruments have recent valid readings (not stale/flat-line)',
+      'Check UPS battery status on SCADA servers and field panels',
+      'Confirm automatic backups ran successfully (check backup log)',
+      'Record operator log entry with any notable events or observations',
+    ]
+  },
+  weekly: {
+    title: 'WEEKLY SCADA MAINTENANCE TASKS',
+    items: [
+      'Run alarm statistics report — check alarm rate vs ISA-18.2 KPIs',
+      'Review and acknowledge all instrument calibration due/overdue notifications',
+      'Test SCADA server failover: switch from primary to standby and verify',
+      'Check network switch logs for errors, high utilization, or port flaps',
+      'Verify remote access VPN is functioning (test from remote location)',
+      'Review historian data completeness report — investigate any gaps > 15 minutes',
+      'Test one emergency stop/shutdown sequence in simulator mode (if available)',
+      'Verify antivirus definitions are current on all SCADA servers',
+      'Check and clear SCADA application error logs',
+      'Review energy consumption trends — identify any anomalies vs baseline',
+    ]
+  },
+  monthly: {
+    title: 'MONTHLY SCADA MAINTENANCE TASKS',
+    items: [
+      'Full system backup: SCADA project, PLC programs, historian archives',
+      'Test backup restoration procedure — restore to test machine and verify',
+      'Perform full alarm rationalization review — identify top 10 most frequent alarms',
+      'Review and update SCADA user access list — remove ex-employees immediately',
+      'Check OS patch status on all SCADA servers — apply approved patches',
+      'Run and review monthly KPI report (uptime, alarm rate, data completeness)',
+      'Inspect all field panels: check for humidity, loose terminals, corrosion',
+      'Calibration check on critical analytical instruments (pH, Cl₂, DO)',
+      'Review historian archive management — ensure archive files are transferred offsite',
+      'Test cellular/4G backup comms for all remote RTU sites',
+      'Update SCADA version control log with any changes made this month',
+    ]
+  },
+  yearly: {
+    title: 'YEARLY SCADA MAINTENANCE TASKS',
+    items: [
+      'Full disaster recovery drill — simulate SCADA server failure and restore from backup',
+      'Third-party cybersecurity assessment per NCA/OTCC requirements',
+      'Review and update SCADA cybersecurity policy and procedures document',
+      'Vendor-supported hardware inspection and maintenance (SCADA servers, switches)',
+      'Full instrument calibration campaign — all field transmitters and analyzers',
+      'Review and update alarm setpoints based on 12-month process data analysis',
+      'SCADA software license renewal and version upgrade assessment',
+      'Update emergency response procedures and operator training materials',
+      'Review and test all SCADA integration interfaces (ERP, CMMS, regulatory)',
+      'Produce annual SCADA performance report for management and client',
+    ]
+  }
+};
+let currentChecklist = 'daily';
+let checklistState = {};
+
+function renderChecklist() {
+  const data = checklists[currentChecklist];
+  const title = document.getElementById('checklist-title');
+  const itemsEl = document.getElementById('checklist-items');
+  if (!data || !title || !itemsEl) return;
+  if (!checklistState[currentChecklist]) checklistState[currentChecklist] = new Array(data.items.length).fill(false);
+  title.textContent = data.title;
+  itemsEl.innerHTML = data.items.map((item,i) => {
+    const done = checklistState[currentChecklist][i];
+    return `<div class="check-item${done?' done':''}" onclick="toggleCheck(${i})">
+      <div class="check-box">${done?'<span style="color:var(--teal);font-size:0.7rem;font-weight:bold">✓</span>':''}</div>
+      <span>${item}</span>
+    </div>`;
+  }).join('');
+  updateChecklistProgress();
+}
+
+function toggleCheck(i) {
+  checklistState[currentChecklist][i] = !checklistState[currentChecklist][i];
+  renderChecklist();
+}
+function resetChecklist() { checklistState[currentChecklist] = new Array(checklists[currentChecklist].items.length).fill(false); renderChecklist(); }
+function checkAll() { checklistState[currentChecklist] = new Array(checklists[currentChecklist].items.length).fill(true); renderChecklist(); }
+
+function updateChecklistProgress() {
+  const arr = checklistState[currentChecklist] || [];
+  const done = arr.filter(Boolean).length;
+  const total = arr.length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  const el = document.getElementById('checklist-progress');
+  const pctEl = document.getElementById('checklist-pct');
+  const barEl = document.getElementById('checklist-bar');
+  if(el) el.textContent = `${done}/${total} complete`;
+  if(pctEl) pctEl.textContent = pct+'%';
+  if(barEl) barEl.style.width = pct+'%';
+}
+
+function switchChecklist(type) {
+  currentChecklist = type;
+  renderChecklist();
+  document.querySelectorAll('[onclick*="switchChecklist"]').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+// ── Process flow explorer ──
+const processInfo = {
+  intake: {
+    title: '🌊 Raw Water Intake — SCADA Monitoring Points',
+    body: `<ul class="space-y-1"><li>▸ <b>FIT-001:</b> Raw water flow rate (m³/h) — electromagnetic flowmeter</li><li>▸ <b>LIT-001:</b> Intake wet well level — submersible pressure transmitter</li><li>▸ <b>AIT-TURB-001:</b> Raw water turbidity — online turbidimeter</li><li>▸ <b>AIT-PH-001:</b> Raw water pH — inline pH electrode</li><li>▸ <b>PUMP-01/02/03:</b> Raw water pump run/stop/fault status and motor current</li><li>▸ <b>Alarm:</b> Low level (pump protection), High level (flooding risk), Instrument fault</li></ul>`
+  },
+  screens: {
+    title: '🔲 Screening & Grit Removal — SCADA Monitoring Points',
+    body: `<ul class="space-y-1"><li>▸ <b>LS-001:</b> Screen panel differential level — screenings build-up indicator</li><li>▸ <b>SCREEN-01:</b> Auto-clean screen duty status and cycle count</li><li>▸ <b>GRIT-PUMP-01:</b> Grit pump run/stop, runtime totalizer</li><li>▸ <b>Alarm:</b> Screen blocked (high differential), Grit pump fault</li></ul>`
+  },
+  coag: {
+    title: '🧪 Coagulation & Flocculation — SCADA Monitoring Points',
+    body: `<ul class="space-y-1"><li>▸ <b>FIT-ALUM:</b> Alum dosing flow rate — PID control loop to maintain target dose</li><li>▸ <b>FIT-POLY:</b> Polymer dosing flow rate</li><li>▸ <b>AIT-TURB-RAPID:</b> Rapid mix turbidity — feedback for dose control</li><li>▸ <b>DOSER-01/02:</b> Chemical metering pump run/stop/fault, stroke setting</li><li>▸ <b>LIT-ALUM-TANK:</b> Alum tank level — low level alarm for chemical reorder</li><li>▸ <b>Alarm:</b> Dosing pump fault, chemical tank low, turbidity out of range</li></ul>`
+  },
+  sed: {
+    title: '🏊 Sedimentation — SCADA Monitoring Points',
+    body: `<ul class="space-y-1"><li>▸ <b>AIT-TURB-SETTLED:</b> Settled water turbidity — target < 2 NTU before filtration</li><li>▸ <b>LIT-CLARI:</b> Clarifier water level</li><li>▸ <b>SLUDGE-VALVE-01:</b> Sludge withdrawal valve — timed cycle, auto-open/close</li><li>▸ <b>SLUDGE-PUMP-01:</b> Sludge pump status, runtime</li><li>▸ <b>Alarm:</b> High turbidity settled water, sludge pump fault, level deviation</li></ul>`
+  },
+  filt: {
+    title: '♦️ Filtration — SCADA Monitoring Points',
+    body: `<ul class="space-y-1"><li>▸ <b>PIT-FILTER-DP:</b> Filter bed differential pressure — key indicator for backwash trigger</li><li>▸ <b>AIT-TURB-FILT:</b> Filtered water turbidity — target < 0.1 NTU</li><li>▸ <b>FIT-FILT-EFFLUENT:</b> Filter effluent flow rate</li><li>▸ <b>BW-PUMP-01:</b> Backwash pump status — sequenced auto-backwash cycle</li><li>▸ <b>AIR-SCOUR-01:</b> Air scour blower status</li><li>▸ <b>Alarm:</b> High DP (backwash required), High turbidity post-filter (filter failure), BW pump fault</li></ul>`
+  },
+  disinfect: {
+    title: '⚗️ Disinfection (Chlorination) — SCADA Monitoring Points',
+    body: `<ul class="space-y-1"><li>▸ <b>AIT-CL2-CONTACT:</b> Free chlorine residual in contact tank — PID control loop</li><li>▸ <b>FIT-CL2-DOSE:</b> Chlorine dosing flow rate — proportional to flow FIT-PRODUCT</li><li>▸ <b>CL2-PUMP-01/02:</b> Hypochlorite dosing pump run/stop/fault</li><li>▸ <b>CL2-TANK-LIT:</b> Hypochlorite tank level</li><li>▸ <b>GAS-DETECT:</b> Chlorine gas detector (if gas chlorination) — CRITICAL SAFETY ALARM</li><li>▸ <b>Alarm (CRITICAL):</b> Cl₂ residual low (&lt;0.2 mg/L NWC limit), Gas detector alarm, Dosing pump fault</li></ul>`
+  },
+  clear: {
+    title: '💧 Clear Water Storage — SCADA Monitoring Points',
+    body: `<ul class="space-y-1"><li>▸ <b>LIT-CWR-01/02:</b> Clear water reservoir level — control start/stop of transfer pumps</li><li>▸ <b>AIT-CL2-CWR:</b> Residual chlorine in reservoir — must be maintained per NWC</li><li>▸ <b>FIT-TOTAL:</b> Daily production totalizer — reported to NWC</li><li>▸ <b>TRANSFER-PUMP-01/02:</b> Transfer pump to network — lead/lag/standby control</li><li>▸ <b>Alarm:</b> Low level (storage deficit), High level (overflow risk), Cl₂ residual low</li></ul>`
+  },
+  dist: {
+    title: '🏙️ Distribution Network — SCADA Monitoring Points',
+    body: `<ul class="space-y-1"><li>▸ <b>PIT-ZONE-01..N:</b> Pressure monitoring at zone entry and critical nodes</li><li>▸ <b>FIT-DMA-01..N:</b> District Metered Area flow — for NRW analysis</li><li>▸ <b>AIT-CL2-NETWORK:</b> Residual chlorine at distribution points</li><li>▸ <b>PRV-01:</b> Pressure Reducing Valve position and downstream pressure</li><li>▸ <b>Alarm:</b> Low pressure (potential main break), High pressure (burst risk), Chlorine decay (residence time issue)</li></ul>`
+  }
+};
+
+function showProcessInfo(key) {
+  const info = processInfo[key];
+  if (!info) return;
+  document.getElementById('process-modal-title').textContent = info.title;
+  document.getElementById('process-modal-body').innerHTML = info.body;
+  openModal('process-modal');
+}
+
+// ── Quiz ──
+const questions = [
+  { q: 'What does SCADA stand for?', options: ['Supervisory Control and Data Acquisition','System Control and Digital Automation','Secure Communications and Data Analysis','Sequential Control and Alarm Detection'], correct: 0 },
+  { q: 'Which standard governs alarm management in the process industries?', options: ['IEC 62443','ISA-18.2','IEC 61511','ISO 9001'], correct: 1 },
+  { q: 'In Saudi water projects, which organization sets standards for potable water quality and monitoring?', options: ['SWCC','MOMRA','NWC (National Water Company)','SABIC'], correct: 2 },
+  { q: 'What is the main advantage of OPC-UA over Modbus TCP for SCADA communication?', options: ['OPC-UA is simpler and faster','OPC-UA includes security (authentication/encryption) and a richer data model','Modbus TCP requires more bandwidth','OPC-UA is only for wireless networks'], correct: 1 },
+  { q: 'What does "RTU store-and-forward" mean in the context of remote pumping stations?', options: ['The RTU stores alarm history only','If comms to SCADA is lost, the RTU buffers data locally and uploads it when reconnected','The RTU forwards all data to a third-party cloud server','The SCADA server stores data and forwards it to the RTU'], correct: 1 },
+  { q: 'According to ISA-18.2, what is the target maximum alarm rate for an operator in steady-state operations?', options: ['1 alarm per minute','10 alarms per 10 minutes','1 alarm per 10 minutes','No specific limit'], correct: 2 },
+  { q: 'Which cybersecurity standard is mandatory for critical water infrastructure OT systems in Saudi Arabia?', options: ['NIST CSF','IEC 62443 + OTCC (NCA)','ISO 27001','NERC CIP'], correct: 1 },
+  { q: 'In a water treatment SCADA system, what process does DO-based aeration control optimize?', options: ['Chlorination dosing','Coagulant dosing','Blower energy consumption in biological treatment','Filter backwash frequency'], correct: 2 },
+  { q: 'What is the purpose of a "Safety PLC" (SIS) in a water treatment plant SCADA system?', options: ['It replaces the main PLC when it fails','It provides independent, deterministic safety shutdowns per IEC 61511, separate from the main control PLC','It serves as the SCADA server backup','It handles HMI graphics rendering'], correct: 1 },
+  { q: 'Which communication protocol is specifically designed for wide-area telemetry to remote RTUs over WAN/radio links?', options: ['PROFIBUS DP','OPC-DA','DNP3 / IEC 60870-5','EtherNet/IP'], correct: 2 },
+];
+
+let quizCurrent = 0;
+let quizScore = 0;
+let quizAnswered = [];
+
+function renderQuiz() {
+  const container = document.getElementById('quiz-body');
+  const resultEl = document.getElementById('quiz-result');
+  if (!container) return;
+  if (quizCurrent >= questions.length) {
+    container.style.display = 'none';
+    resultEl.classList.remove('hidden');
+    const pct = Math.round(quizScore/questions.length*100);
+    document.getElementById('quiz-score-text').textContent = `Score: ${quizScore}/${questions.length} (${pct}%)`;
+    let feedback = '';
+    if (pct >= 90) feedback = '🌟 Excellent! You have a strong understanding of SCADA systems. Ready for senior engineer responsibilities.';
+    else if (pct >= 70) feedback = '👍 Good work! Review the sections on topics you missed and revisit the quiz.';
+    else feedback = '📚 Keep studying! Focus on the Fundamentals and Architecture modules. You\'ve got this!';
+    document.getElementById('quiz-feedback').textContent = feedback;
+    return;
+  }
+  const q = questions[quizCurrent];
+  container.innerHTML = `
+    <div class="text-xs mono mb-3" style="color:var(--text-muted)">Question ${quizCurrent+1} of ${questions.length}</div>
+    <div class="progress-bar mb-4"><div class="progress-fill" style="width:${(quizCurrent/questions.length)*100}%"></div></div>
+    <div class="font-bold text-base mb-4">${q.q}</div>
+    ${q.options.map((opt,i) => `<div class="quiz-option" onclick="answerQuiz(${i})" id="qopt-${i}">${String.fromCharCode(65+i)}. ${opt}</div>`).join('')}
+  `;
+}
+
+function answerQuiz(chosen) {
+  const q = questions[quizCurrent];
+  const opts = document.querySelectorAll('.quiz-option');
+  opts.forEach((o,i) => {
+    o.style.pointerEvents = 'none';
+    if (i === q.correct) o.classList.add('correct');
+    else if (i === chosen && chosen !== q.correct) o.classList.add('wrong');
+  });
+  if (chosen === q.correct) quizScore++;
+  setTimeout(() => { quizCurrent++; renderQuiz(); }, 1200);
+}
+
+function restartQuiz() {
+  quizCurrent = 0; quizScore = 0; quizAnswered = [];
+  document.getElementById('quiz-body').style.display = '';
+  document.getElementById('quiz-result').classList.add('hidden');
+  renderQuiz();
+}
+
+// ── Glossary ──
+const glossaryTerms = [
+  {term:'SCADA', def:'Supervisory Control and Data Acquisition — system for remote monitoring and control of industrial processes.'},
+  {term:'PLC', def:'Programmable Logic Controller — industrial computer executing real-time control logic for process automation.'},
+  {term:'RTU', def:'Remote Terminal Unit — rugged field device for remote telemetry, data acquisition, and basic control at unmanned sites.'},
+  {term:'HMI', def:'Human-Machine Interface — graphical operator screens displaying process status and enabling control commands.'},
+  {term:'OPC-UA', def:'Open Platform Communications Unified Architecture — modern, secure, platform-independent standard for industrial data exchange.'},
+  {term:'Historian', def:'Time-series database storing all process tag values with timestamps. Essential for trending, reporting, and regulatory compliance.'},
+  {term:'Tag', def:'A named data point in SCADA representing a field measurement, status, or calculated value. The fundamental unit of SCADA data.'},
+  {term:'VFD', def:'Variable Frequency Drive — controls pump/motor speed by varying electrical frequency, enabling energy-efficient flow control.'},
+  {term:'ISA-18.2', def:'ISA standard for Alarm Management — defines alarm philosophy, rationalization, KPIs, and best practices.'},
+  {term:'IEC 62443', def:'International standard for Industrial Automation and Control Systems (IACS) cybersecurity — the reference for OT/SCADA security.'},
+  {term:'DNP3', def:'Distributed Network Protocol 3 — communication protocol designed for SCADA WAN communications to remote RTUs, especially over radio links.'},
+  {term:'HART', def:'Highway Addressable Remote Transducer — protocol overlaid on 4-20mA signals for digital communication with smart field instruments.'},
+  {term:'Modbus', def:'Simple, open serial/TCP communication protocol widely used to connect PLCs, RTUs, and field devices. No built-in security.'},
+  {term:'NWC', def:'National Water Company (Saudi Arabia) — the primary water utility responsible for water and wastewater services in Saudi cities.'},
+  {term:'SWCC', def:'Saline Water Conversion Corporation (Saudi Arabia) — manages desalination plants providing potable water across the Kingdom.'},
+  {term:'FAT', def:'Factory Acceptance Test — testing of the SCADA/PLC system at the vendor\'s facility before shipping to site, using simulated I/O.'},
+  {term:'SAT', def:'Site Acceptance Test — comprehensive testing of the complete installed system on-site with live field instruments and equipment.'},
+  {term:'P&ID', def:'Piping and Instrumentation Diagram — engineering drawing showing all process equipment, pipes, instruments, and control loops.'},
+  {term:'MBR', def:'Membrane Bioreactor — advanced wastewater treatment combining biological treatment with membrane filtration for high-quality effluent.'},
+  {term:'SIS / ESD', def:'Safety Instrumented System / Emergency Shutdown — independent safety system (per IEC 61511) that initiates automatic protective actions.'},
+];
+
+function renderGlossary() {
+  const el = document.getElementById('glossary-list');
+  if (!el) return;
+  el.innerHTML = glossaryTerms.map(t => `<div class="glossary-term"><div class="glossary-dt">${t.term}</div><div class="glossary-dd">${t.def}</div></div>`).join('');
+}
+
+// ── Init ──
+window.addEventListener('DOMContentLoaded', () => {
+  initTrendChart();
+  renderChecklist();
+  renderGlossary();
+  renderQuiz();
+  startSimulator();
+});
+
+// ── Scroll spy ──
+window.addEventListener('scroll', () => {
+  const sections = ['hero','fundamentals','awpt-use','architecture','implementation','config','maintenance','advanced','tools','glossary'];
+  let current = '';
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && window.scrollY >= el.offsetTop - 120) current = id;
+  });
+  document.querySelectorAll('.nav-link').forEach(l => {
+    l.classList.toggle('active', l.getAttribute('onclick')?.includes(`'${current}'`));
+  });
+});
+</script>
+</body>
+</html>
